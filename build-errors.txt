@@ -1,0 +1,2059 @@
+﻿[33mÔØ»[39m Building...
+[32mÔ£ö[39m Building...
+Application bundle generation failed. [2.566 seconds] - 2026-06-15T21:20:25.930Z
+
+node.exe : [1m[33m[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: 
+NgClass is not used within the template of SidebarComponent[0m 
+[1m[35m[plugin angular-compiler][0m
+En C:\Users\ASUS\AppData\Roaming\npm\ng.ps1: 24 Carácter: 5
++     & "node$exe"  "$basedir/node_modules/@angular/cli/bin/ng.js" $arg ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([1m[33m[33mÔ...r-compiler][0m 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+    src/app/core/layout/components/sidebar/sidebar.component.ts:10:42:
+[37m      10 Ôöé   imports: [RouterLink, RouterLinkActive, [32mNgClass[37m],
+         ÔòÁ                                           [32m~~~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not 
+used within the template of AsistenciaRegistroComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    
+src/app/features/asistencia/registro/asistencia-registro.component.ts:15:12:
+[37m      15 Ôöé   imports: [[32mRouterLink[37m, NgFor, NgClass, 
+FormsModule],
+         ÔòÁ             [32m~~~~~~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgForOf is not used 
+within the template of AsistenciaRegistroComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    
+src/app/features/asistencia/registro/asistencia-registro.component.ts:15:24:
+[37m      15 Ôöé   imports: [RouterLink, [32mNgFor[37m, NgClass, 
+FormsModule],
+         ÔòÁ                         [32m~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgForOf is not used 
+within the template of EvaluacionNotasComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/evaluacion/notas/evaluacion-notas.component.ts:14:25:
+[37m      14 Ôöé   imports: [FormsModule, [32mNgFor[37m, NgClass, 
+DecimalPipe],
+         ÔòÁ                          [32m~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgForOf is not used 
+within the template of NuevaMatriculaComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/matricula/nueva/nueva-matricula.component.ts:12:25:
+[37m      12 Ôöé   imports: [FormsModule, [32mNgFor[37m, NgClass, 
+RouterLink],
+         ÔòÁ                          [32m~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgClass is not used 
+within the template of NuevaMatriculaComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/matricula/nueva/nueva-matricula.component.ts:12:32:
+[37m      12 Ôöé   imports: [FormsModule, NgFor, [32mNgClass[37m, 
+RouterLink],
+         ÔòÁ                                 [32m~~~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgForOf is not used 
+within the template of PortalDocenteComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/portal-docente/portal-docente.component.ts:10:24:
+[37m      10 Ôöé   imports: [RouterLink, [32mNgFor[37m, NgClass],
+         ÔòÁ                         [32m~~~~~[0m
+
+
+[33mÔû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: NgForOf is not used 
+within the template of TesoreriaPagosComponent[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/tesoreria/pagos/tesoreria-pagos.component.ts:14:25:
+[37m      14 Ôöé   imports: [FormsModule, [32mNgFor[37m, NgClass, 
+DecimalPipe, TitleCasePip...
+         ÔòÁ                          [32m~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 
+'DashboardComponent' does not exist on type 'typeof import("C:/Users/ASUS/DEV/e
+scolar/src/app/features/dashboard/dashboard.component")'.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/app.routes.ts:32:92:
+[37m      32 Ôöé ...es/dashboard/dashboard.component').then(m => 
+m.[32mDashboardComponent[37m)
+         ÔòÁ                                                   
+[32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type '{ id: string; 
+codigo: any; nombre: string; }[]' is not assignable to type 'UserRole[]'.
+  Property 'nivel' is missing in type '{ id: string; codigo: any; nombre: 
+string; }' but required in type 'UserRole'.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/core/auth/services/auth.service.ts:35:6:
+[37m      35 Ôöé       [32mroles[37m: roles.map(r => ({ id: r, codigo: r as 
+any, nombre: r ...
+         ÔòÁ       [32m~~~~~[0m
+
+  'nivel' is declared here.
+
+    src/app/core/auth/models/auth.model.ts:39:2:
+[37m      39 Ôöé   [32mnivel[37m: number;
+         ÔòÁ   [32m~~~~~[0m
+
+  The expected type comes from property 'roles' which is declared here on type 
+'AuthUser'
+
+    src/app/core/auth/models/auth.model.ts:26:2:
+[37m      26 Ôöé   [32mroles[37m: UserRole[];
+         ÔòÁ   [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type '(typeof 
+RouterLink | typeof NgClass | typeof FormsModule | typeof NgForOf | 
+undefined)[]' is not assignable to type '(readonly any[] | Type<any>)[]'.
+  Type 'typeof RouterLink | typeof NgClass | typeof FormsModule | typeof 
+NgForOf | undefined' is not assignable to type 'readonly any[] | Type<any>'.
+    Type 'undefined' is not assignable to type 'readonly any[] | 
+Type<any>'.[0m [1m[35m[plugin angular-compiler][0m
+
+    
+src/app/features/administracion/institucional/institucional.component.ts:10:2:
+[37m      10 Ôöé   [32mimports[37m: [, FormsModule, NgFor, NgClass, 
+RouterLink],
+         ÔòÁ   [32m~~~~~~~[0m
+
+  The expected type comes from property 'imports' which is declared here on 
+type 'Component'
+
+    node_modules/@angular/core/types/_discovery-chunk.d.ts:5401:4:
+[37m      5401 Ôöé     [32mimports[37m?: (Type<any> | ReadonlyArray<any>)[];
+           ÔòÁ     [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1010: 'imports' must be an 
+array of components, directives, pipes, or NgModules.
+  Value could not be determined statically.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    
+src/app/features/administracion/institucional/institucional.component.ts:10:12:
+[37m      10 Ôöé   imports: [[32m[37m, FormsModule, NgFor, NgClass, 
+RouterLink],
+         ÔòÁ             [32m^[0m
+
+  This syntax is not supported.
+
+    
+src/app/features/administracion/institucional/institucional.component.ts:10:12:
+[37m      10 Ôöé   imports: [[32m[37m, FormsModule, NgFor, NgClass, 
+RouterLink],
+         ÔòÁ             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1146: Declaration 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/login/login.component.ts:260:2:
+[37m      260 Ôöé })[32m[37m
+          ÔòÁ   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:157:103:
+[37m      157 Ôöé ...ss-bar bg-indigo-500" 
+[style.width]="item.pct+`[32m"%`"[37m"></div></div>
+          ÔòÁ                                                   [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ':' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:157:107:
+[37m      157 Ôöé ...ss-bar bg-indigo-500" 
+[style.width]="item.pct+`"%`"[32m"></div></div>[37m
+          ÔòÁ                                                       
+[32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1002: Unterminated string 
+literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:157:121:
+[37m      157 Ôöé ...s-bar bg-indigo-500" 
+[style.width]="item.pct+`"%`""></div></div>[32m[37m
+          ÔòÁ                                                                  
+  [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:158:15:
+[37m      158 Ôöé               <[32m/div>[37m
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:160:11:
+[37m      160 Ôöé           <[32m/div>[37m
+          ÔòÁ            [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:161:9:
+[37m      161 Ôöé         <[32m/div>[37m
+          ÔòÁ          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:163:22:
+[37m      163 Ôöé         <!-- Vacantes [32mpor[37m grado -->
+          ÔòÁ                       [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:163:26:
+[37m      163 Ôöé         <!-- Vacantes por [32mgrado[37m -->
+          ÔòÁ                           [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:164:13:
+[37m      164 Ôöé         <div [32mclass[37m="card p-6">
+          ÔòÁ              [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:164:18:
+[37m      164 Ôöé         <div class[32m=[37m"card p-6">
+          ÔòÁ                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:165:15:
+[37m      165 Ôöé           <div [32mclass[37m="flex items-center 
+justify-between mb-5">
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:165:20:
+[37m      165 Ôöé           <div class[32m=[37m"flex items-center 
+justify-between mb-5">
+          ÔòÁ                     [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:166:16:
+[37m      166 Ôöé             <h3 [32mclass[37m="font-semibold 
+text-gray-800">Vacantes Disp...
+          ÔòÁ                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:166:21:
+[37m      166 Ôöé             <h3 class[32m=[37m"font-semibold 
+text-gray-800">Vacantes Disp...
+          ÔòÁ                      [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:166:61:
+[37m      166 Ôöé ...<h3 class="font-semibold text-gray-800">Vacantes 
+[32mDisponibles[37m</h3>
+          ÔòÁ                                                     
+[32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:166:73:
+[37m      166 Ôöé ...<h3 class="font-semibold text-gray-800">Vacantes 
+Disponibles<[32m/h3>[37m
+          ÔòÁ                                                                 
+[32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:167:15:
+[37m      167 Ôöé             <a [32mrouterLink[37m="/matricula/vacantes" 
+class="text-xs te...
+          ÔòÁ                [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:167:48:
+[37m      167 Ôöé ...erLink="/matricula/vacantes" [32mclass[37m="text-xs 
+text-indigo-600 ho...
+          ÔòÁ                                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:167:53:
+[37m      167 Ôöé ...ink="/matricula/vacantes" class[32m=[37m"text-xs 
+text-indigo-600 hover...
+          ÔòÁ                                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:167:106:
+[37m      167 Ôöé ...es" class="text-xs text-indigo-600 
+hover:underline">Gestionar<[32m/a>[37m
+          ÔòÁ                                                                  
+[32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:168:11:
+[37m      168 Ôöé           <[32m/div>[37m
+          ÔòÁ            [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:169:15:
+[37m      169 Ôöé           <div [32mclass[37m="space-y-2">
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:169:20:
+[37m      169 Ôöé           <div class[32m=[37m"space-y-2">
+          ÔòÁ                     [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1109: Expression 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:13:
+[37m      170 Ôöé             @[32mfor[37m (v of vacantes; track v.grado) {
+          ÔòÁ              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:18:
+[37m      170 Ôöé             @for ([32mv[37m of vacantes; track v.grado) {
+          ÔòÁ                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'vacantes'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:23:
+[37m      170 Ôöé             @for (v of [32mvacantes[37m; track v.grado) {
+          ÔòÁ                        [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ')' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:31:
+[37m      170 Ôöé             @for (v of vacantes[32m;[37m track v.grado) {
+          ÔòÁ                                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1434: Unexpected keyword or 
+identifier.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:33:
+[37m      170 Ôöé             @for (v of vacantes; [32mtrack[37m v.grado) {
+          ÔòÁ                                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'track'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:33:
+[37m      170 Ôöé             @for (v of vacantes; [32mtrack[37m v.grado) {
+          ÔòÁ                                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:39:
+[37m      170 Ôöé             @for (v of vacantes; track [32mv[37m.grado) {
+          ÔòÁ                                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:170:46:
+[37m      170 Ôöé             @for (v of vacantes; track v.grado[32m)[37m {
+          ÔòÁ                                               [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:171:15:
+[37m      171 Ôöé               <[32mdiv[37m class="flex items-center 
+justify-between py-2 ...
+          ÔòÁ                [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:171:19:
+[37m      171 Ôöé               <div [32mclass[37m="flex items-center 
+justify-between py-2 ...
+          ÔòÁ                    [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:171:24:
+[37m      171 Ôöé               <div class[32m=[37m"flex items-center 
+justify-between py-2 ...
+          ÔòÁ                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:172:17:
+[37m      172 Ôöé                 <[32mdiv[37m>
+          ÔòÁ                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:19:
+[37m      173 Ôöé                   <[32mdiv[37m class="text-sm font-medium 
+text-gray-700">...
+          ÔòÁ                    [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:23:
+[37m      173 Ôöé                   <div [32mclass[37m="text-sm font-medium 
+text-gray-700">...
+          ÔòÁ                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:28:
+[37m      173 Ôöé                   <div class[32m=[37m"text-sm font-medium 
+text-gray-700">...
+          ÔòÁ                             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:29:
+[37m      173 Ôöé ...  <div class=[32m"text-sm font-medium 
+text-gray-700">{[37m{ v.grado }}...
+          ÔòÁ                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:66:
+[37m      173 Ôöé ...div class="text-sm font-medium 
+text-gray-700">{[32m{[37m v.grado }}</div>
+          ÔòÁ                                                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:68:
+[37m      173 Ôöé ...div class="text-sm font-medium text-gray-700">{{ 
+[32mv[37m.grado }}</div>
+          ÔòÁ                                                     [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:173:79:
+[37m      173 Ôöé ...div class="text-sm font-medium text-gray-700">{{ v.grado 
+}}<[32m/[37mdiv>
+          ÔòÁ                                                                
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:19:
+[37m      174 Ôöé                   <[32mdiv[37m class="text-xs 
+text-gray-400">{{ v.ocupado...
+          ÔòÁ                    [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:23:
+[37m      174 Ôöé                   <div [32mclass[37m="text-xs 
+text-gray-400">{{ v.ocupado...
+          ÔòÁ                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:28:
+[37m      174 Ôöé                   <div class[32m=[37m"text-xs 
+text-gray-400">{{ v.ocupado...
+          ÔòÁ                             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:29:
+[37m      174 Ôöé ...        <div class=[32m"text-xs text-gray-400">{[37m{ 
+v.ocupado }}/{{ ...
+          ÔòÁ                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:54:
+[37m      174 Ôöé ...class="text-xs text-gray-400">{[32m{[37m v.ocupado 
+}}/{{ v.total }} oc...
+          ÔòÁ                                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:56:
+[37m      174 Ôöé ...ass="text-xs text-gray-400">{{ [32mv[37m.ocupado }}/{{ 
+v.total }} ocup...
+          ÔòÁ                                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:174:67:
+[37m      174 Ôöé ...xt-xs text-gray-400">{{ v.ocupado }[32m}[37m/{{ 
+v.total }} ocupadas</div>
+          ÔòÁ                                       [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:175:17:
+[37m      175 Ôöé                 <[32m/[37mdiv>
+          ÔòÁ                  [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:176:17:
+[37m      176 Ôöé                 <[32mdiv[37m class="flex items-center 
+gap-2">
+          ÔòÁ                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:176:21:
+[37m      176 Ôöé                 <div [32mclass[37m="flex items-center 
+gap-2">
+          ÔòÁ                      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:176:26:
+[37m      176 Ôöé                 <div class[32m=[37m"flex items-center 
+gap-2">
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:177:19:
+[37m      177 Ôöé                   <[32mspan[37m class="text-sm font-bold"
+          ÔòÁ                    [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:177:24:
+[37m      177 Ôöé                   <span [32mclass[37m="text-sm font-bold"
+          ÔòÁ                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:177:29:
+[37m      177 Ôöé                   <span class[32m=[37m"text-sm font-bold"
+          ÔòÁ                              [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'boolean' is not 
+assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:177:30:
+[37m      177 Ôöé                   <span class=[32m"text-sm font-bold"[37m
+          ÔòÁ                               [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2542: Index signature in type 
+'String' only permits reading.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:177:30:
+[37m      177 Ôöé                   <span class=[32m"text-sm font-bold"[37m
+          ÔòÁ                               [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'ngClass'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:178:21:
+[37m      178 Ôöé                     [[32mngClass[37m]="v.libres > 5 ? 
+'text-green-600' : ...
+          ÔòÁ                      [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:178:30:
+[37m      178 Ôöé ...[ngClass]=[32m"v.libres > 5 ? 'text-green-600' : 
+v.libres > 0 ? 't[37m...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:179:21:
+[37m      179 Ôöé                     {[32m{[37m v.libres }} libres
+          ÔòÁ                      [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:179:23:
+[37m      179 Ôöé                     {{ [32mv[37m.libres }} libres
+          ÔòÁ                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:179:33:
+[37m      179 Ôöé                     {{ v.libres }[32m}[37m libres
+          ÔòÁ                                  [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'libres'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:179:35:
+[37m      179 Ôöé                     {{ v.libres }} [32mlibres[37m
+          ÔòÁ                                    [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:180:19:
+[37m      180 Ôöé                   <[32m/span>[37m
+          ÔòÁ                    [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1109: Expression 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:181:19:
+[37m      181 Ôöé                   @[32mif[37m (v.libres === 0) {
+          ÔòÁ                    [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'v'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:181:23:
+[37m      181 Ôöé                   @if ([32mv[37m.libres === 0) {
+          ÔòÁ                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:21:
+[37m      182 Ôöé                     <[32mspan[37m class="badge 
+badge-danger">Lleno</span>
+          ÔòÁ                      [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:26:
+[37m      182 Ôöé                     <span [32mclass[37m="badge 
+badge-danger">Lleno</span>
+          ÔòÁ                           [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:31:
+[37m      182 Ôöé                     <span class[32m=[37m"badge 
+badge-danger">Lleno</span>
+          ÔòÁ                                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '<' cannot be 
+applied to types 'boolean' and 'RegExp'.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:32:
+[37m      182 Ôöé                     <span class=[32m"badge 
+badge-danger">Lleno</span>[37m
+          ÔòÁ                                 
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Lleno'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:53:
+[37m      182 Ôöé                     <span class="badge 
+badge-danger">[32mLleno[37m</span>
+          ÔòÁ                                                      
+[32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:182:59:
+[37m      182 Ôöé                     <span class="badge 
+badge-danger">Lleno<[32m/span>[37m
+          ÔòÁ                                                            
+[32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:184:17:
+[37m      184 Ôöé                 <[32m/[37mdiv>
+          ÔòÁ                  [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:185:15:
+[37m      185 Ôöé               <[32m/div>[37m
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:186:12:
+[37m      186 Ôöé             [32m}[37m
+          ÔòÁ             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:187:11:
+[37m      187 Ôöé           <[32m/[37mdiv>
+          ÔòÁ            [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:188:9:
+[37m      188 Ôöé         <[32m/div>[37m
+          ÔòÁ          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Actividad'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:190:13:
+[37m      190 Ôöé         <!-- [32mActividad[37m reciente -->
+          ÔòÁ              [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:190:23:
+[37m      190 Ôöé         <!-- Actividad [32mreciente[37m -->
+          ÔòÁ                        [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'reciente'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:190:23:
+[37m      190 Ôöé         <!-- Actividad [32mreciente[37m -->
+          ÔòÁ                        [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:191:9:
+[37m      191 Ôöé         <[32mdiv[37m class="card p-6">
+          ÔòÁ          [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:191:13:
+[37m      191 Ôöé         <div [32mclass[37m="card p-6">
+          ÔòÁ              [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:191:18:
+[37m      191 Ôöé         <div class[32m=[37m"card p-6">
+          ÔòÁ                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'h3'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:11:
+[37m      192 Ôöé           <[32mh3[37m class="font-semibold text-gray-800 
+mb-5">Actividad ...
+          ÔòÁ            [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:14:
+[37m      192 Ôöé           <h3 [32mclass[37m="font-semibold text-gray-800 
+mb-5">Actividad ...
+          ÔòÁ               [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:19:
+[37m      192 Ôöé           <h3 class[32m=[37m"font-semibold text-gray-800 
+mb-5">Actividad ...
+          ÔòÁ                    [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Actividad'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:55:
+[37m      192 Ôöé ... class="font-semibold text-gray-800 
+mb-5">[32mActividad[37m Reciente</h3>
+          ÔòÁ                                              [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:65:
+[37m      192 Ôöé ... class="font-semibold text-gray-800 mb-5">Actividad 
+[32mReciente[37m</h3>
+          ÔòÁ                                                        
+[32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Reciente'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:65:
+[37m      192 Ôöé ... class="font-semibold text-gray-800 mb-5">Actividad 
+[32mReciente[37m</h3>
+          ÔòÁ                                                        
+[32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:192:74:
+[37m      192 Ôöé ... class="font-semibold text-gray-800 mb-5">Actividad 
+Reciente<[32m/h3>[37m
+          ÔòÁ                                                                 
+[32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:193:11:
+[37m      193 Ôöé           <[32mdiv[37m class="space-y-3">
+          ÔòÁ            [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:193:15:
+[37m      193 Ôöé           <div [32mclass[37m="space-y-3">
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:193:20:
+[37m      193 Ôöé           <div class[32m=[37m"space-y-3">
+          ÔòÁ                     [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1109: Expression 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:13:
+[37m      194 Ôöé             @[32mfor[37m (act of recentActivity; track 
+act.time) {
+          ÔòÁ              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:18:
+[37m      194 Ôöé             @for ([32mact[37m of recentActivity; track 
+act.time) {
+          ÔòÁ                   [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'recentActivity'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:25:
+[37m      194 Ôöé             @for (act of [32mrecentActivity[37m; track 
+act.time) {
+          ÔòÁ                          [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ')' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:39:
+[37m      194 Ôöé             @for (act of recentActivity[32m;[37m track 
+act.time) {
+          ÔòÁ                                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1434: Unexpected keyword or 
+identifier.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:41:
+[37m      194 Ôöé             @for (act of recentActivity; [32mtrack[37m 
+act.time) {
+          ÔòÁ                                          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'track'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:41:
+[37m      194 Ôöé             @for (act of recentActivity; [32mtrack[37m 
+act.time) {
+          ÔòÁ                                          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:47:
+[37m      194 Ôöé             @for (act of recentActivity; track 
+[32mact[37m.time) {
+          ÔòÁ                                                [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:194:55:
+[37m      194 Ôöé             @for (act of recentActivity; track 
+act.time[32m)[37m {
+          ÔòÁ                                                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:195:15:
+[37m      195 Ôöé               <[32mdiv[37m class="flex items-start gap-3">
+          ÔòÁ                [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:195:19:
+[37m      195 Ôöé               <div [32mclass[37m="flex items-start gap-3">
+          ÔòÁ                    [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:195:24:
+[37m      195 Ôöé               <div class[32m=[37m"flex items-start gap-3">
+          ÔòÁ                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:17:
+[37m      196 Ôöé                 <[32mdiv[37m class="w-8 h-8 rounded-full 
+flex items-cente...
+          ÔòÁ                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:21:
+[37m      196 Ôöé                 <div [32mclass[37m="w-8 h-8 rounded-full 
+flex items-cente...
+          ÔòÁ                      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:26:
+[37m      196 Ôöé                 <div class[32m=[37m"w-8 h-8 rounded-full 
+flex items-cente...
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'boolean' is not 
+assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:27:
+[37m      196 Ôöé ...div class=[32m"w-8 h-8 rounded-full flex items-center 
+justify-cent[37m...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2542: Index signature in type 
+'String' only permits reading.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:27:
+[37m      196 Ôöé ...div class=[32m"w-8 h-8 rounded-full flex items-center 
+justify-cent[37m...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'ngClass'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:196:93:
+[37m      196 Ôöé ...flex items-center justify-center shrink-0" 
+[[32mngClass[37m]="act.color">
+          ÔòÁ                                                [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:19:
+[37m      197 Ôöé                   <[32mspan[37m class="icon text-white 
+text-sm">{{ act.ic...
+          ÔòÁ                    [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:24:
+[37m      197 Ôöé                   <span [32mclass[37m="icon text-white 
+text-sm">{{ act.ic...
+          ÔòÁ                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:29:
+[37m      197 Ôöé                   <span class[32m=[37m"icon text-white 
+text-sm">{{ act.ic...
+          ÔòÁ                              [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:30:
+[37m      197 Ôöé ...      <span class=[32m"icon text-white text-sm">{[37m{ 
+act.icon }}</span>
+          ÔòÁ                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:57:
+[37m      197 Ôöé ...      <span class="icon text-white text-sm">{[32m{[37m 
+act.icon }}</span>
+          ÔòÁ                                                 [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:59:
+[37m      197 Ôöé ...      <span class="icon text-white text-sm">{{ 
+[32mact[37m.icon }}</span>
+          ÔòÁ                                                   [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:197:71:
+[37m      197 Ôöé ...      <span class="icon text-white text-sm">{{ act.icon 
+}}<[32m/[37mspan>
+          ÔòÁ                                                               
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:198:17:
+[37m      198 Ôöé                 <[32m/div>[37m
+          ÔòÁ                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:199:17:
+[37m      199 Ôöé                 <[32mdiv[37m class="flex-1 min-w-0">
+          ÔòÁ                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:199:21:
+[37m      199 Ôöé                 <div [32mclass[37m="flex-1 min-w-0">
+          ÔòÁ                      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:199:26:
+[37m      199 Ôöé                 <div class[32m=[37m"flex-1 min-w-0">
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'p'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:19:
+[37m      200 Ôöé                   <[32mp[37m class="text-sm text-gray-700 
+leading-tight">...
+          ÔòÁ                    [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:21:
+[37m      200 Ôöé                   <p [32mclass[37m="text-sm text-gray-700 
+leading-tight">...
+          ÔòÁ                      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:26:
+[37m      200 Ôöé                   <p class[32m=[37m"text-sm text-gray-700 
+leading-tight">...
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:27:
+[37m      200 Ôöé ...   <p class=[32m"text-sm text-gray-700 
+leading-tight">{[37m{ act.descr...
+          ÔòÁ                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:66:
+[37m      200 Ôöé ...s="text-sm text-gray-700 leading-tight">{[32m{[37m 
+act.description }}</p>
+          ÔòÁ                                             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:68:
+[37m      200 Ôöé ...s="text-sm text-gray-700 leading-tight">{{ 
+[32mact[37m.description }}</p>
+          ÔòÁ                                               [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:85:
+[37m      200 Ôöé ...s="text-sm text-gray-700 leading-tight">{{ 
+act.description }[32m}[37m</p>
+          ÔòÁ                                                                
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:200:87:
+[37m      200 Ôöé ...s="text-sm text-gray-700 leading-tight">{{ 
+act.description }}<[32m/[37mp>
+          ÔòÁ                                                                  
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'p'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:19:
+[37m      201 Ôöé                   <[32mp[37m class="text-xs text-gray-400 
+mt-0.5">{{ act....
+          ÔòÁ                    [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:21:
+[37m      201 Ôöé                   <p [32mclass[37m="text-xs text-gray-400 
+mt-0.5">{{ act....
+          ÔòÁ                      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:26:
+[37m      201 Ôöé                   <p class[32m=[37m"text-xs text-gray-400 
+mt-0.5">{{ act....
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:27:
+[37m      201 Ôöé ...      <p class=[32m"text-xs text-gray-400 
+mt-0.5">{[37m{ act.user }} ´┐¢...
+          ÔòÁ                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:59:
+[37m      201 Ôöé ...text-xs text-gray-400 mt-0.5">{[32m{[37m act.user }} 
+├é┬À {{ act.time ...
+          ÔòÁ                                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:61:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ [32mact[37m.user }} ├é┬À 
+{{ act.time }}</p>
+          ÔòÁ                                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:71:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }[32m}[37m ├é┬À 
+{{ act.time }}</p>
+          ÔòÁ                                            [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1434: Unexpected keyword or 
+identifier.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:73:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }} [32m├é[37m┬À 
+{{ act.time }}</p>
+          ÔòÁ                                              [32m~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'├é┬À'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:73:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }} [32m├é[37m┬À 
+{{ act.time }}</p>
+          ÔòÁ                                              [32m~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'act'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:79:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }} ├é┬À {[32m{ 
+a[37mct.time }}</p>
+          ÔòÁ                                                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '<' cannot be 
+applied to types 'boolean' and 'RegExp'.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:90:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }} ├é┬À {{ 
+act.time [32m}}</p>[37m
+          ÔòÁ                                                             
+[32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:201:91:
+[37m      201 Ôöé ...t-xs text-gray-400 mt-0.5">{{ act.user }} ├é┬À {{ 
+act.time }[32m}[37m</p>
+          ÔòÁ                                                              
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:202:17:
+[37m      202 Ôöé                 <[32m/div>[37m
+          ÔòÁ                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:203:15:
+[37m      203 Ôöé               <[32m/div>[37m
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:204:12:
+[37m      204 Ôöé             [32m}[37m
+          ÔòÁ             [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '<' cannot be 
+applied to types 'boolean' and 'RegExp'.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:205:10:
+[37m      205 Ôöé           [32m</div>[37m
+          ÔòÁ           [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:205:11:
+[37m      205 Ôöé           <[32m/[37mdiv>
+          ÔòÁ            [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:206:9:
+[37m      206 Ôöé         <[32m/div>[37m
+          ÔòÁ          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:207:7:
+[37m      207 Ôöé       <[32m/div>[37m
+          ÔòÁ        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Accesos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:209:11:
+[37m      209 Ôöé       <!-- [32mAccesos[37m r├â┬ípidos -->
+          ÔòÁ            [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:209:19:
+[37m      209 Ôöé       <!-- Accesos [32mr´┐¢[37m´┐¢┬ípidos -->
+          ÔòÁ                    [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'r├â'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:209:19:
+[37m      209 Ôöé       <!-- Accesos [32mr´┐¢[37m´┐¢┬ípidos -->
+          ÔòÁ                    [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1127: Invalid character.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:209:21:
+[37m      209 Ôöé       <!-- Accesos r´┐¢[32m´┐¢[37m┬ípidos -->
+          ÔòÁ                      [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'pidos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:209:22:
+[37m      209 Ôöé       <!-- Accesos r├â[32m┬ípid[37mos -->
+          ÔòÁ                      [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:210:7:
+[37m      210 Ôöé       <[32mdiv[37m class="card p-6">
+          ÔòÁ        [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:210:11:
+[37m      210 Ôöé       <div [32mclass[37m="card p-6">
+          ÔòÁ            [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:210:16:
+[37m      210 Ôöé       <div class[32m=[37m"card p-6">
+          ÔòÁ                 [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'h3'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:9:
+[37m      211 Ôöé         <[32mh3[37m class="font-semibold text-gray-800 
+mb-4">Accesos R├â´┐¢...
+          ÔòÁ          [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:12:
+[37m      211 Ôöé         <h3 [32mclass[37m="font-semibold text-gray-800 
+mb-4">Accesos R├â´┐¢...
+          ÔòÁ             [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:17:
+[37m      211 Ôöé         <h3 class[32m=[37m"font-semibold text-gray-800 
+mb-4">Accesos R├â´┐¢...
+          ÔòÁ                  [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'Accesos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:53:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 
+mb-4">[32mAccesos[37m R├â┬ípidos</h3>
+          ÔòÁ                                              [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:61:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 mb-4">Accesos 
+[32mR´┐¢[37m´┐¢┬ípidos</h3>
+          ÔòÁ                                                      [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'R├â'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:61:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 mb-4">Accesos 
+[32mR´┐¢[37m´┐¢┬ípidos</h3>
+          ÔòÁ                                                      [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1127: Invalid character.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:63:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 mb-4">Accesos 
+R´┐¢[32m´┐¢[37m┬ípidos</h3>
+          ÔòÁ                                                        [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'pidos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:64:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 mb-4">Accesos 
+R├â[32m┬ípid[37mos</h3>
+          ÔòÁ                                                        
+[32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:211:70:
+[37m      211 Ôöé ... class="font-semibold text-gray-800 mb-4">Accesos 
+R├â┬ípido[32ms</h[37m3>
+          ÔòÁ                                                             
+[32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:212:9:
+[37m      212 Ôöé         <[32mdiv[37m class="grid grid-cols-2 
+sm:grid-cols-4 lg:grid-cols-...
+          ÔòÁ          [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:212:13:
+[37m      212 Ôöé         <div [32mclass[37m="grid grid-cols-2 
+sm:grid-cols-4 lg:grid-cols-...
+          ÔòÁ              [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:212:18:
+[37m      212 Ôöé         <div class[32m=[37m"grid grid-cols-2 
+sm:grid-cols-4 lg:grid-cols-...
+          ÔòÁ                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1109: Expression 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:11:
+[37m      213 Ôöé           @[32mfor[37m (acc of accesosRapidos; track 
+acc.label) {
+          ÔòÁ            [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'acc'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:16:
+[37m      213 Ôöé           @for ([32macc[37m of accesosRapidos; track 
+acc.label) {
+          ÔòÁ                 [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'accesosRapidos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:23:
+[37m      213 Ôöé           @for (acc of [32maccesosRapidos[37m; track 
+acc.label) {
+          ÔòÁ                        [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ')' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:37:
+[37m      213 Ôöé           @for (acc of accesosRapidos[32m;[37m track 
+acc.label) {
+          ÔòÁ                                      [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1434: Unexpected keyword or 
+identifier.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:39:
+[37m      213 Ôöé           @for (acc of accesosRapidos; [32mtrack[37m 
+acc.label) {
+          ÔòÁ                                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'track'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:39:
+[37m      213 Ôöé           @for (acc of accesosRapidos; [32mtrack[37m 
+acc.label) {
+          ÔòÁ                                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'acc'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:45:
+[37m      213 Ôöé           @for (acc of accesosRapidos; track 
+[32macc[37m.label) {
+          ÔòÁ                                              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:213:54:
+[37m      213 Ôöé           @for (acc of accesosRapidos; track 
+acc.label[32m)[37m {
+          ÔòÁ                                                       [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'a'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:214:13:
+[37m      214 Ôöé             <[32ma[37m
+          ÔòÁ              [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:215:14:
+[37m      215 Ôöé               [32m[[37mrouterLink]="acc.route"
+          ÔòÁ               [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'routerLink'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:215:15:
+[37m      215 Ôöé               [[32mrouterLink[37m]="acc.route"
+          ÔòÁ                [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:215:26:
+[37m      215 Ôöé               [routerLink][32m=[37m"acc.route"
+          ÔòÁ                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:216:19:
+[37m      216 Ôöé               class[32m=[37m"flex flex-col items-center 
+gap-2 p-3 rounded...
+          ÔòÁ                    [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:15:
+[37m      218 Ôöé               <[32mdiv[37m class="w-10 h-10 rounded-xl 
+flex items-center ...
+          ÔòÁ                [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:19:
+[37m      218 Ôöé               <div [32mclass[37m="w-10 h-10 rounded-xl 
+flex items-center ...
+          ÔòÁ                    [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:24:
+[37m      218 Ôöé               <div class[32m=[37m"w-10 h-10 rounded-xl 
+flex items-center ...
+          ÔòÁ                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'boolean' is not 
+assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:25:
+[37m      218 Ôöé ...div class=[32m"w-10 h-10 rounded-xl flex items-center 
+justify-cent[37m...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2542: Index signature in type 
+'String' only permits reading.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:25:
+[37m      218 Ôöé ...div class=[32m"w-10 h-10 rounded-xl flex items-center 
+justify-cent[37m...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'ngClass'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:218:125:
+[37m      218 Ôöé ...roup-hover:scale-110 transition-transform" 
+[[32mngClass[37m]="acc.color">
+          ÔòÁ                                                [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:17:
+[37m      219 Ôöé                 <[32mspan[37m class="icon text-white 
+text-lg">{{ acc.icon...
+          ÔòÁ                  [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '>' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:22:
+[37m      219 Ôöé                 <span [32mclass[37m="icon text-white 
+text-lg">{{ acc.icon...
+          ÔòÁ                       [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:27:
+[37m      219 Ôöé                 <span class[32m=[37m"icon text-white 
+text-lg">{{ acc.icon...
+          ÔòÁ                            [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:28:
+[37m      219 Ôöé ...      <span class=[32m"icon text-white text-lg">{[37m{ 
+acc.icon }}</span>
+          ÔòÁ                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:55:
+[37m      219 Ôöé ...      <span class="icon text-white text-lg">{[32m{[37m 
+acc.icon }}</span>
+          ÔòÁ                                                 [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'acc'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:57:
+[37m      219 Ôöé ...      <span class="icon text-white text-lg">{{ 
+[32macc[37m.icon }}</span>
+          ÔòÁ                                                   [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:219:69:
+[37m      219 Ôöé ...      <span class="icon text-white text-lg">{{ acc.icon 
+}}<[32m/[37mspan>
+          ÔòÁ                                                               
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:220:15:
+[37m      220 Ôöé               <[32m/div>[37m
+          ÔòÁ                [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:15:
+[37m      221 Ôöé               <[32mspan[37m class="text-xs text-gray-600 
+text-center lead...
+          ÔòÁ                [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:20:
+[37m      221 Ôöé               <span [32mclass[37m="text-xs text-gray-600 
+text-center lead...
+          ÔòÁ                     [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:25:
+[37m      221 Ôöé               <span class[32m=[37m"text-xs text-gray-600 
+text-center lead...
+          ÔòÁ                          [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2365: Operator '>' cannot be 
+applied to types 'string' and '{}'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:26:
+[37m      221 Ôöé ...pan class=[32m"text-xs text-gray-600 text-center 
+leading-tight">{[37m{...
+          ÔòÁ              
+[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1136: Property assignment 
+expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:77:
+[37m      221 Ôöé ...s text-gray-600 text-center leading-tight">{[32m{[37m 
+acc.label }}</span>
+          ÔòÁ                                                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 
+'acc'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:79:
+[37m      221 Ôöé ...s text-gray-600 text-center leading-tight">{{ 
+[32macc[37m.label }}</span>
+          ÔòÁ                                                  [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:90:
+[37m      221 Ôöé ...s text-gray-600 text-center leading-tight">{{ acc.label 
+}[32m}[37m</span>
+          ÔòÁ                                                             
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:221:92:
+[37m      221 Ôöé ...s text-gray-600 text-center leading-tight">{{ acc.label 
+}}<[32m/[37mspan>
+          ÔòÁ                                                               
+[32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:222:13:
+[37m      222 Ôöé             <[32m/a>[37m
+          ÔòÁ              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or 
+statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:223:10:
+[37m      223 Ôöé           [32m}[37m
+          ÔòÁ           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1110: Type expected.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:224:9:
+[37m      224 Ôöé         <[32m/[37mdiv>
+          ÔòÁ          [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:225:7:
+[37m      225 Ôöé       <[32m/div>[37m
+          ÔòÁ        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1161: Unterminated regular 
+expression literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:227:5:
+[37m      227 Ôöé     <[32m/div>[37m
+          ÔòÁ      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2349: This expression is not 
+callable.
+  Type 'RegExp' has no call signatures.[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:227:5:
+[37m      227 Ôöé     <[32m/div>[37m
+          ÔòÁ      [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1160: Unterminated template 
+literal.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/dashboard.component.ts:302:0:
+[37m      302 Ôöé [32m[37m
+          ÔòÁ [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-menu' is not a 
+known element:
+1. If 'mat-menu' is an Angular component, then verify that it is included in 
+the '@Component.imports' of this component.
+2. If 'mat-menu' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the 
+'@Component.schemas' of this component to suppress this message.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/estudiantes/list/estudiantes-list.component.ts:117:18:
+[37m      117 Ôöé                   [32m<mat-menu #menu="matMenu">[37m
+          ÔòÁ                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8003: No directive found with 
+exportAs 'matMenu'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/estudiantes/list/estudiantes-list.component.ts:117:35:
+[37m      117 Ôöé                   <mat-menu #menu="[32mmatMenu[37m">
+          ÔòÁ                                    [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mExpected identifier but found 
+"{"[0m
+
+    src/app/features/dashboard/dashboard.component.ts:6:10:
+[37m      6 Ôöé     class [32m{[37m
+        ÔòÁ           [32m^[0m
+
+[39m[22m

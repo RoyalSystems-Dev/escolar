@@ -1,0 +1,193 @@
+import { Injectable, signal, computed } from '@angular/core';
+
+export interface NavItem {
+  label: string;
+  icon: string;
+  route?: string;
+  queryParams?: Record<string, string>;
+  children?: NavItem[];
+  roles?: string[];
+  permisos?: string[];
+  badge?: number;
+  /** staff = módulos administrativos; portal-* = portales por rol */
+  zone?: 'staff' | 'portal-docente' | 'portal-estudiante' | 'portal-padre' | 'shared';
+}
+
+@Injectable({ providedIn: 'root' })
+export class LayoutService {
+  private readonly _miniMode  = signal(false);
+  private readonly _mobileOpen = signal(false);
+  private readonly _isMobile  = signal(false);
+  private readonly _pageTitle = signal('Dashboard');
+
+  readonly miniMode    = this._miniMode.asReadonly();
+  readonly mobileOpen  = this._mobileOpen.asReadonly();
+  readonly isMobile    = this._isMobile.asReadonly();
+  readonly pageTitle   = this._pageTitle.asReadonly();
+
+  readonly sidebarVisible = computed(() =>
+    this._isMobile() ? this._mobileOpen() : true
+  );
+  readonly sidebarWidth = computed(() =>
+    this._miniMode() && !this._isMobile() ? '72px' : '260px'
+  );
+
+  toggle(): void {
+    if (this._isMobile()) this._mobileOpen.update(v => !v);
+    else                  this._miniMode.update(v => !v);
+  }
+
+  closeMobile(): void  { this._mobileOpen.set(false); }
+  setMobile(v: boolean): void {
+    this._isMobile.set(v);
+    if (v) this._mobileOpen.set(false);
+  }
+  setTitle(t: string): void { this._pageTitle.set(t); }
+
+  readonly nav: NavItem[] = [
+    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard', permisos: ['dashboard.ver'], zone: 'shared' },
+    {
+      label: 'Estudiantes', icon: 'school', zone: 'staff',
+      permisos: ['estudiantes.ver'],
+      children: [
+        { label: 'Expedientes', icon: 'folder_open',  route: '/estudiantes/expedientes', permisos: ['estudiantes.ver'] },
+        { label: 'Documentos',  icon: 'description',  route: '/estudiantes/documentos',  permisos: ['estudiantes.ver'] },
+        { label: 'Conducta',    icon: 'gavel',         route: '/estudiantes/conducta',    permisos: ['estudiantes.ver'] },
+      ]
+    },
+    {
+      label: 'Matrícula', icon: 'how_to_reg', zone: 'staff',
+      permisos: ['matricula.ver'],
+      children: [
+        { label: 'Alumnos Matriculados', icon: 'list_alt',           route: '/matricula/matriculados',   permisos: ['matricula.ver'] },
+        { label: 'Nueva Matrícula',      icon: 'person_add',        route: '/matricula/nueva',          permisos: ['matricula.crear', 'matricula.ver'] },
+        { label: 'Continuidad',      icon: 'autorenew',         route: '/matricula/continuidad',    permisos: ['matricula.ver'] },
+        { label: 'Matrícula Masiva', icon: 'group_add',         route: '/matricula/masiva',         permisos: ['matricula.ver'] },
+        { label: 'Vacantes',         icon: 'event_seat',        route: '/matricula/vacantes',       permisos: ['matricula.vacantes', 'matricula.ver'] },
+        { label: 'Lista de Espera',  icon: 'hourglass_empty',   route: '/matricula/espera',         permisos: ['matricula.ver'] },
+        { label: 'Cambio de Sección',icon: 'compare_arrows',    route: '/matricula/cambio-seccion', permisos: ['matricula.editar', 'matricula.ver'] },
+      ]
+    },
+    {
+      label: 'Académico', icon: 'menu_book', zone: 'staff',
+      permisos: ['horarios.ver', 'docentes.ver', 'docentes.horario'],
+      children: [
+        { label: 'Currícula',         icon: 'library_books',  route: '/academico/curricula',  permisos: ['horarios.ver', 'docentes.ver'] },
+        { label: 'Asignación Docente',icon: 'assignment_ind', route: '/academico/asignacion', queryParams: { tab: 'docentes' }, permisos: ['docentes.horario', 'docentes.ver'] },
+        { label: 'Horarios',          icon: 'schedule',       route: '/academico/horarios',   permisos: ['horarios.ver'] },
+        { label: 'Historial Académico', icon: 'timeline',     route: '/academico/historial-academico', permisos: ['estudiantes.ver', 'evaluacion.ver', 'horarios.ver'] },
+      ]
+    },
+    {
+      label: 'Asistencia', icon: 'fact_check', zone: 'staff',
+      permisos: ['asistencia.ver'],
+      children: [
+        { label: 'Registro Diario',   icon: 'today',                    route: '/asistencia/registro',         permisos: ['asistencia.registrar', 'asistencia.ver'] },
+        { label: 'Control de Faltas', icon: 'cancel_presentation',      route: '/asistencia/control',          permisos: ['asistencia.ver'] },
+        { label: 'Justificaciones',   icon: 'assignment_turned_in',     route: '/asistencia/justificaciones',  permisos: ['asistencia.ver'] },
+        { label: 'Alertas',           icon: 'notification_important',   route: '/asistencia/alertas',          permisos: ['asistencia.ver'] },
+        { label: 'Reportes',          icon: 'bar_chart',                route: '/asistencia/reportes',         permisos: ['asistencia.reportes', 'asistencia.ver'] },
+      ]
+    },
+    {
+      label: 'Evaluación', icon: 'grading', zone: 'staff',
+      permisos: ['evaluacion.ver'],
+      children: [
+        { label: 'Registro de Notas', icon: 'edit_note',      route: '/evaluacion/notas',       permisos: ['evaluacion.registrar', 'evaluacion.ver'] },
+        { label: 'Por Competencias',  icon: 'stars',          route: '/evaluacion/competencias', permisos: ['evaluacion.ver'] },
+        { label: 'Promedios',         icon: 'calculate',      route: '/evaluacion/promedios',   permisos: ['evaluacion.reportes', 'evaluacion.ver'] },
+        { label: 'Libretas',          icon: 'picture_as_pdf', route: '/evaluacion/libretas',    permisos: ['evaluacion.ver'] },
+        { label: 'Actas',             icon: 'article',        route: '/evaluacion/actas',       permisos: ['evaluacion.aprobar', 'evaluacion.ver'] },
+      ]
+    },
+    {
+      label: 'Comunicaciones', icon: 'forum', zone: 'staff',
+      permisos: ['comunicados.ver'],
+      children: [
+        { label: 'Mensajería',     icon: 'message',       route: '/comunicaciones/mensajes',       permisos: ['comunicados.ver'] },
+        { label: 'Comunicados',    icon: 'campaign',      route: '/comunicaciones/comunicados',    permisos: ['comunicados.ver'] },
+        { label: 'Eventos',        icon: 'event',         route: '/comunicaciones/eventos',        permisos: ['comunicados.ver'] },
+        { label: 'Notificaciones', icon: 'notifications', route: '/comunicaciones/notificaciones', permisos: ['comunicados.ver'] },
+      ]
+    },
+    {
+      label: 'Portal Docente', icon: 'co_present', zone: 'portal-docente', roles: ['DOCENTE'],
+      children: [
+        { label: 'Mis datos',  icon: 'badge',      route: '/portal-docente/mis-datos'  },
+        { label: 'Mi Aula',    icon: 'class',      route: '/portal-docente/mi-aula'    },
+        { label: 'Asistencia', icon: 'fact_check', route: '/portal-docente/asistencia' },
+        { label: 'Notas',      icon: 'grading',    route: '/portal-docente/notas'      },
+        { label: 'Tareas',     icon: 'assignment', route: '/portal-docente/tareas' },
+        { label: 'Recursos',   icon: 'folder',     route: '/portal-docente/recursos'   },
+        { label: 'Temario',    icon: 'calendar_month', route: '/portal-docente/temario' },
+      ]
+    },
+    {
+      label: 'Portal Estudiante', icon: 'person', zone: 'portal-estudiante', roles: ['ESTUDIANTE'],
+      children: [
+        { label: 'Mis Horarios', icon: 'schedule',   route: '/portal-estudiante/horarios'   },
+        { label: 'Mis Notas',    icon: 'grading',    route: '/portal-estudiante/notas'      },
+        { label: 'Asistencia',   icon: 'fact_check', route: '/portal-estudiante/asistencia' },
+        { label: 'Tareas',       icon: 'assignment', route: '/portal-estudiante/tareas'     },
+        { label: 'Clases',       icon: 'menu_book',  route: '/portal-estudiante/clases'     },
+        { label: 'Contactos',    icon: 'contacts',   route: '/portal-estudiante/contactos'  },
+        { label: 'Mi ficha',     icon: 'badge',      route: '/portal-estudiante/perfil'     },
+      ]
+    },
+    {
+      label: 'Portal Padre', icon: 'family_restroom', zone: 'portal-padre', roles: ['PADRE'],
+      children: [
+        { label: 'Seguimiento',   icon: 'visibility',             route: '/portal-padre/seguimiento'  },
+        { label: 'Ficha del alumno', icon: 'badge',               route: '/portal-padre/ficha'        },
+        { label: 'Horarios',      icon: 'schedule',               route: '/portal-padre/horarios'     },
+        { label: 'Comunicación',  icon: 'chat',                   route: '/portal-padre/comunicacion' },
+        { label: 'Correo a docentes', icon: 'mail',               route: '/portal-padre/correo-docentes' },
+        { label: 'Estado de Cuenta', icon: 'account_balance_wallet', route: '/portal-padre/finanzas'  },
+      ]
+    },
+    {
+      label: 'Tesorería', icon: 'account_balance', zone: 'staff',
+      permisos: ['tesoreria.ver'],
+      children: [
+        { label: 'Conceptos de Pago', icon: 'receipt',     route: '/tesoreria/conceptos', permisos: ['tesoreria.conceptos', 'tesoreria.ver'] },
+        { label: 'Registro de Pagos', icon: 'payment',     route: '/tesoreria/pagos',     permisos: ['tesoreria.registrar', 'tesoreria.ver'] },
+        { label: 'Morosidad',         icon: 'money_off',   route: '/tesoreria/morosidad', permisos: ['tesoreria.ver'] },
+        { label: 'Reportes',          icon: 'bar_chart',   route: '/tesoreria/reportes',  permisos: ['tesoreria.reportes', 'tesoreria.ver'] },
+      ]
+    },
+    {
+      label: 'Biblioteca', icon: 'local_library', zone: 'staff',
+      permisos: ['biblioteca.ver'],
+      children: [
+        { label: 'Catálogo',    icon: 'menu_book',  route: '/biblioteca/catalogo',   permisos: ['biblioteca.ver'] },
+        { label: 'Préstamos',   icon: 'swap_horiz', route: '/biblioteca/prestamos',  permisos: ['biblioteca.gestionar', 'biblioteca.ver'] },
+        { label: 'Inventario',  icon: 'inventory',  route: '/biblioteca/inventario', permisos: ['biblioteca.gestionar', 'biblioteca.ver'] },
+      ]
+    },
+    {
+      label: 'Administración', icon: 'admin_panel_settings', zone: 'staff',
+      permisos: ['admin.institucional', 'admin.usuarios', 'admin.roles', 'admin.reportes'],
+      children: [
+        { label: 'Configuración Institucional', icon: 'business',        route: '/administracion/institucional', permisos: ['admin.institucional'] },
+        { label: 'Usuarios',                    icon: 'manage_accounts', route: '/administracion/usuarios',      permisos: ['admin.usuarios'] },
+        { label: 'Roles y Permisos',            icon: 'security',        route: '/administracion/roles',         permisos: ['admin.roles'] },
+        { label: 'Bitácora',                    icon: 'history',         route: '/administracion/bitacora',      permisos: ['admin.reportes'] },
+      ]
+    },
+    {
+      label: 'Maestros', icon: 'tune', zone: 'staff',
+      permisos: ['matricula.vacantes', 'matricula.ver', 'horarios.ver', 'docentes.ver', 'estudiantes.ver', 'admin.institucional', 'comunicados.ver'],
+      children: [
+        { label: 'Salones', icon: 'meeting_room', route: '/maestros/salones', permisos: ['matricula.vacantes', 'matricula.ver'] },
+        { label: 'Sedes', icon: 'location_city', route: '/maestros/sedes', permisos: ['admin.institucional', 'matricula.ver', 'matricula.vacantes', 'horarios.ver', 'docentes.ver', 'estudiantes.ver'] },
+        { label: 'Cursos', icon: 'menu_book', route: '/maestros/cursos', permisos: ['horarios.ver', 'docentes.ver', 'matricula.ver'] },
+        { label: 'Docentes', icon: 'school', route: '/maestros/docentes', permisos: ['docentes.ver', 'docentes.crear', 'docentes.editar', 'horarios.ver', 'matricula.ver', 'matricula.vacantes'] },
+        { label: 'Faltas y Reconocimientos', icon: 'gavel', route: '/maestros/faltas-reconocimientos', permisos: ['estudiantes.ver', 'matricula.ver', 'matricula.vacantes', 'horarios.ver', 'docentes.ver'] },
+        { label: 'Feriados', icon: 'event_busy', route: '/maestros/feriados', permisos: ['asistencia.ver', 'matricula.ver', 'horarios.ver'] },
+        { label: 'Períodos Académicos', icon: 'date_range', route: '/maestros/periodos-academicos', permisos: ['horarios.ver', 'evaluacion.ver', 'matricula.ver'] },
+        { label: 'Eventos', icon: 'event', route: '/maestros/eventos', permisos: ['comunicados.ver', 'matricula.ver', 'horarios.ver'] },
+        { label: 'Fórmulas de Evaluación', icon: 'functions', route: '/maestros/formulas-evaluacion', permisos: ['evaluacion.registrar', 'evaluacion.ver', 'admin.institucional'] },
+      ]
+    },
+  ];
+}

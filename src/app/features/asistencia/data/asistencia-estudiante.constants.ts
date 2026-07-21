@@ -1,0 +1,41 @@
+import { RegistroAsistenciaAlumno } from '../models/asistencia-estudiante.model';
+
+const r = (
+  id: number,
+  estudianteId: string,
+  fecha: string,
+  estado: RegistroAsistenciaAlumno['estado'],
+  observacion?: string,
+): RegistroAsistenciaAlumno => ({ id, estudianteId, fecha, estado, observacion });
+
+export const REGISTROS_ASISTENCIA_ALUMNO: RegistroAsistenciaAlumno[] = [
+  r(100, '5', '2026-05-05', 'P'),
+  r(101, '5', '2026-05-06', 'P'),
+  r(102, '5', '2026-05-07', 'T', 'Ingreso 12 minutos tarde'),
+  r(103, '5', '2026-05-08', 'P'),
+  r(104, '5', '2026-05-09', 'F', 'Malestar estomacal'),
+  r(105, '5', '2026-05-12', 'J', 'Justificada por cita médica'),
+  r(106, '5', '2026-05-13', 'P'),
+  r(107, '5', '2026-05-14', 'P'),
+  r(108, '5', '2026-05-15', 'P'),
+  r(1, '5', '2026-06-01', 'P'),
+  r(2, '5', '2026-06-02', 'T', 'Ingreso 10 minutos tarde'),
+  r(3, '5', '2026-06-03', 'P'),
+  r(4, '5', '2026-06-04', 'P'),
+  r(5, '5', '2026-06-05', 'F', 'Malestar general'),
+  r(6, '5', '2026-06-08', 'J', 'Justificada con constancia médica'),
+  r(7, '5', '2026-06-09', 'P'),
+  r(8, '5', '2026-06-10', 'P'),
+  r(9, '5', '2026-06-11', 'T', 'Tardanza por tráfico'),
+  r(10, '5', '2026-06-12', 'P'),
+  r(11, '5', '2026-06-15', 'P'),
+  r(12, '5', '2026-06-16', 'P'),
+  r(13, '5', '2026-06-17', 'P'),
+  r(14, '5', '2026-06-18', 'P'),
+  r(15, '5', '2026-06-19', 'F', 'Inasistencia sin justificar'),
+  r(16, '5', '2026-06-22', 'P'),
+  r(17, '5', '2026-06-23', 'P'),
+  r(18, '5', '2026-06-24', 'P'),
+  r(19, '5', '2026-06-25', 'T', 'Ingreso 5 minutos tarde'),
+  r(20, '5', '2026-06-26', 'P'),
+];
