@@ -9,8 +9,18 @@ function redirectSinPermiso(): ReturnType<Router['createUrlTree']> {
 /** Acceso al dashboard según permiso en BD (p. ej. dashboard.ver). */
 export const dashboardGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.isPortalPadre()) {
+    return router.createUrlTree(['/portal-padre/inicio']);
+  }
+  if (auth.isPortalEstudiante()) {
+    return router.createUrlTree(['/portal-estudiante/dashboard']);
+  }
+  if (auth.isPortalDocente()) {
+    return router.createUrlTree(['/portal-docente']);
+  }
   if (!auth.hasAnyPermiso('dashboard.ver')) {
-    return inject(Router).createUrlTree(['/sin-permiso']);
+    return router.createUrlTree(['/sin-permiso']);
   }
   return true;
 };

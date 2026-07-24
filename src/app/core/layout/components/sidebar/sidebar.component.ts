@@ -2,6 +2,8 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { LayoutService, NavItem } from '../../services/layout.service';
 import { AuthService } from '../../../auth/services/auth.service';
+import { GradingConfigService } from '../../../grading/grading-config.service';
+import { matchesEvalNav } from '../../../grading/grading-config.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -85,31 +87,37 @@ import { AuthService } from '../../../auth/services/auth.service';
 export class SidebarComponent {
   readonly layout = inject(LayoutService);
   readonly auth   = inject(AuthService);
+  private readonly grading = inject(GradingConfigService);
   private readonly _openGroups = signal<Set<string>>(new Set());
   readonly openGroups = this._openGroups.asReadonly();
 
-  readonly visibleNav = computed(() =>
-    this.layout.nav
-      .map((item) => this.filterNavItem(item))
-      .filter((item): item is NavItem => item !== null),
-  );
+  readonly visibleNav = computed(() => {
+    const cfg = this.grading.config();
+    return this.layout.nav
+      .map((item) => this.filterNavItem(item, cfg))
+      .filter((item): item is NavItem => item !== null);
+  });
 
-  private filterNavItem(item: NavItem, parentZone?: NavItem['zone']): NavItem | null {
+  private filterNavItem(item: NavItem, cfg: ReturnType<GradingConfigService['config']>, parentZone?: NavItem['zone']): NavItem | null {
     const zone = item.zone ?? parentZone;
 
     if (item.children?.length) {
       if (!this.canSeeNavItem(item, zone)) return null;
       const children = item.children
-        .map((child) => this.filterNavItem({ ...child, zone: child.zone ?? zone }, zone))
+        .map((child) => this.filterNavItem({ ...child, zone: child.zone ?? zone }, cfg, zone))
         .filter((child): child is NavItem => child !== null);
       if (!children.length) return null;
       return { ...item, children };
     }
 
-    return this.canSeeNavItem(item, zone) ? item : null;
+    return this.canSeeNavItem(item, zone, cfg) ? item : null;
   }
 
-  private canSeeNavItem(item: NavItem, zone?: NavItem['zone']): boolean {
+  private canSeeNavItem(item: NavItem, zone?: NavItem['zone'], cfg = this.grading.config()): boolean {
+    if (item.route === '/dashboard' && (this.auth.isPortalPadre() || this.auth.isPortalDocente() || this.auth.isPortalEstudiante())) {
+      return false;
+    }
+    if (item.evalMode && !matchesEvalNav(item.evalMode, cfg)) return false;
     const effectiveZone = zone ?? item.zone;
 
     if (!this.auth.canSeeNavZone(effectiveZone)) return false;

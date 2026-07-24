@@ -6,6 +6,7 @@ import {
   TemarioClaseItem,
   TemarioClasePayload,
   TemarioClaseUpdatePayload,
+  toImagenesClasePayload,
 } from './temario.model';
 
 export interface TemarioQuery {
@@ -36,7 +37,7 @@ export class TemarioDocenteService {
 
   create(payload: TemarioClasePayload): Observable<TemarioClaseItem> {
     this.saving.set(true);
-    return this.http.post<TemarioClaseItem>(this.base, payload).pipe(
+    return this.http.post<TemarioClaseItem>(this.base, this.sanitizePayload(payload)).pipe(
       catchError((err) => throwError(() => err)),
       finalize(() => this.saving.set(false)),
     );
@@ -44,7 +45,7 @@ export class TemarioDocenteService {
 
   update(id: number, payload: TemarioClaseUpdatePayload): Observable<TemarioClaseItem> {
     this.saving.set(true);
-    return this.http.patch<TemarioClaseItem>(`${this.base}/${id}`, payload).pipe(
+    return this.http.patch<TemarioClaseItem>(`${this.base}/${id}`, this.sanitizePayload(payload)).pipe(
       catchError((err) => throwError(() => err)),
       finalize(() => this.saving.set(false)),
     );
@@ -66,5 +67,13 @@ export class TemarioDocenteService {
     if (query.curso) params = params.set('curso', query.curso);
     if (query.anioEscolar) params = params.set('anioEscolar', query.anioEscolar);
     return params;
+  }
+
+  private sanitizePayload<T extends TemarioClasePayload | TemarioClaseUpdatePayload>(payload: T): T {
+    if (!payload.imagenesClase?.length) return payload;
+    return {
+      ...payload,
+      imagenesClase: toImagenesClasePayload(payload.imagenesClase),
+    };
   }
 }

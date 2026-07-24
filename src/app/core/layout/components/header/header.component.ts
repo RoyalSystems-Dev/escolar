@@ -9,9 +9,11 @@ import { AuthService } from '../../../auth/services/auth.service';
   imports: [RouterLink],
   template: `
     <header class="h-16 bg-white border-b border-gray-100 flex items-center px-4 gap-3 shrink-0 shadow-sm">
-      <button class="btn-icon" (click)="layout.toggle()" title="Menu">
-        <span class="icon">menu</span>
-      </button>
+      @if (!auth.isPortalEstudiante() || !layout.isPhone()) {
+        <button class="btn-icon" (click)="layout.toggle()" title="Menu">
+          <span class="icon">menu</span>
+        </button>
+      }
       <h1 class="text-base font-semibold text-gray-800 flex-1 truncate">{{ layout.pageTitle() }}</h1>
       <div class="flex items-center gap-1">
         <button class="btn-icon" title="Buscar"><span class="icon">search</span></button>
@@ -36,7 +38,9 @@ import { AuthService } from '../../../auth/services/auth.service';
                 </div>
               }
               <div class="px-4 py-2 border-t border-gray-100 text-center">
-                <a routerLink="/comunicaciones/notificaciones" class="text-xs text-indigo-600 hover:underline"
+                <a
+                  [routerLink]="auth.isPortalEstudiante() ? '/portal-estudiante/comunicados' : '/comunicaciones/notificaciones'"
+                  class="text-xs text-indigo-600 hover:underline"
                   (click)="notifOpen.set(false)">Ver todas</a>
               </div>
             </div>
@@ -52,7 +56,10 @@ import { AuthService } from '../../../auth/services/auth.service';
                 <div class="font-semibold text-gray-800 text-sm">{{ auth.nombreCompleto() }}</div>
                 <div class="text-xs text-gray-500 truncate">{{ auth.currentUser()?.email }}</div>
               </div>
-              <a class="dropdown-item" routerLink="/perfil" (click)="userOpen.set(false)">
+              <a
+                class="dropdown-item"
+                [routerLink]="auth.isPortalEstudiante() ? '/portal-estudiante/perfil' : '/perfil'"
+                (click)="userOpen.set(false)">
                 <span class="icon icon-sm">person</span> Mi Perfil
               </a>
               <div class="dropdown-divider"></div>

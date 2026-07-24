@@ -14,8 +14,15 @@ import {
   fileAccentForName,
   fileIconForName,
   formatFileSize,
+  materialRecursoNombre,
+  materialRecursoUrl,
   taskFileUrl,
 } from './tareas.model';
+import {
+  tipoRecursoBadge,
+  tipoRecursoEmoji,
+  tipoRecursoLabel,
+} from '../../portal-docente/recursos/recursos.model';
 
 @Component({
   standalone: true,
@@ -35,7 +42,7 @@ import {
         <div>
           <h2 class="text-2xl font-bold text-gray-900">Mis Tareas</h2>
           <p class="text-sm text-gray-400 mt-0.5">
-            {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · Sube tus entregas para revisión docente
+            {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · Consulta materiales y sube tus entregas
           </p>
         </div>
         <button class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loading()">
@@ -103,8 +110,9 @@ import {
         <div class="space-y-3">
           @for (t of filtradas(); track t.id) {
             @let style = cursoStyle(t.curso);
-            <div class="card overflow-hidden hover:shadow-md transition-shadow"
-              [ngClass]="t.estado === 'OVERDUE' ? 'border-l-4 border-l-red-400' : t.venceHoy ? 'border-l-4 border-l-amber-400' : t.estado === 'GRADED' ? 'border-l-4 border-l-indigo-400' : ''">
+            <div class="card overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              [ngClass]="t.estado === 'OVERDUE' ? 'border-l-4 border-l-red-400' : t.venceHoy ? 'border-l-4 border-l-amber-400' : t.estado === 'GRADED' ? 'border-l-4 border-l-indigo-400' : ''"
+              (click)="abrirDetalle(t)">
               <div class="p-4 flex flex-col lg:flex-row lg:items-start gap-4">
                 <div class="flex items-start gap-3 flex-1 min-w-0">
                   <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border"
@@ -149,6 +157,12 @@ import {
                         <span class="icon icon-sm text-gray-400 shrink-0 ml-auto">open_in_new</span>
                       </a>
                     }
+                    @if (t.recurso) {
+                      <p class="mt-2 text-xs text-indigo-600 font-medium inline-flex items-center gap-1">
+                        <span class="icon icon-sm">attach_file</span> Material del docente disponible
+                      </p>
+                    }
+
                     @if (t.comentarioEntrega) {
                       <p class="mt-2 text-xs text-gray-500 italic">"{{ t.comentarioEntrega }}"</p>
                     }
@@ -168,10 +182,14 @@ import {
                 </div>
 
                 <div class="flex items-center gap-2 shrink-0">
+                  <button type="button" class="btn btn-secondary btn-sm"
+                    (click)="$event.stopPropagation(); abrirDetalle(t)">
+                    <span class="icon icon-sm">visibility</span> Ver detalle
+                  </button>
                   @if (t.estado === 'PENDING' || t.estado === 'OVERDUE' || t.estado === 'SUBMITTED') {
                     <button type="button" class="btn btn-primary btn-sm"
                       [disabled]="svc.saving()"
-                      (click)="abrirEntrega(t)">
+                      (click)="$event.stopPropagation(); abrirDetalle(t, true)">
                       <span class="icon icon-sm">upload_file</span>
                       {{ t.estado === 'SUBMITTED' ? 'Reenviar' : 'Subir entrega' }}
                     </button>
@@ -188,19 +206,19 @@ import {
       }
     </div>
 
-    @if (entregaAbierta(); as t) {
-      <div class="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm" (click)="cerrarEntrega()"></div>
+    @if (svc.detalleTarea(); as t) {
+      <div class="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm" (click)="cerrarDetalle()"></div>
       <div class="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl z-[90] flex flex-col animate-slide-in-r">
         <div class="relative px-6 py-5 border-b border-gray-200 shrink-0 bg-gradient-to-br from-indigo-50 via-white to-violet-50">
-          <button type="button" class="btn btn-ghost btn-icon absolute top-4 right-4" (click)="cerrarEntrega()">
+          <button type="button" class="btn btn-ghost btn-icon absolute top-4 right-4" (click)="cerrarDetalle()">
             <span class="icon icon-sm">close</span>
           </button>
           <div class="flex items-start gap-3 pr-10">
             <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200">
-              <span class="icon">cloud_upload</span>
+              <span class="icon">assignment</span>
             </div>
             <div class="min-w-0">
-              <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Entrega de tarea</p>
+              <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Detalle de tarea</p>
               <h2 class="text-lg font-bold text-gray-900 mt-0.5 leading-snug">{{ t.titulo }}</h2>
               <div class="flex flex-wrap gap-2 mt-2">
                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-gray-200 text-xs text-gray-600">
@@ -210,21 +228,89 @@ import {
                   [ngClass]="t.vencida ? 'bg-red-50 border-red-200 text-red-700' : t.venceHoy ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-gray-200 text-gray-600'">
                   <span class="icon icon-sm">event</span> {{ svc.formatFecha(t.fechaEntrega) }}
                 </span>
-                @if (t.estado === 'SUBMITTED') {
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
-                    <span class="icon icon-sm">history</span> Reemplazar entrega
-                  </span>
-                }
+                <span class="badge text-xs" [ngClass]="svc.estadoBadge(t.estado)">
+                  {{ svc.estadoLabel(t.estado) }}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          @if (t.archivoEntregaNombre && t.estado === 'SUBMITTED') {
+          @if (svc.cargandoDetalle()) {
+            <div class="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
+              <span class="icon icon-sm animate-spin">progress_activity</span> Cargando material…
+            </div>
+          }
+
+          @if (t.recurso; as r) {
+            <section class="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-sm font-semibold text-indigo-900 flex items-center gap-2">
+                  <span class="text-lg">{{ tipoEmoji(r.tipo) }}</span> Material del docente
+                </h3>
+                <span class="badge text-xs" [ngClass]="tipoBadge(r.tipo)">{{ tipoLabel(r.tipo) }}</span>
+              </div>
+              @if (r.docente) {
+                <p class="text-xs text-indigo-700">Publicado por {{ r.docente }}</p>
+              }
+              @if (r.descripcion) {
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ r.descripcion }}</p>
+              }
+              @if (materialUrl(r.url); as url) {
+                @let nombreMat = materialNombre(r.nombreArchivo, r.url);
+                @if (nombreMat) {
+                  @let matAccent = fileAccentForName(nombreMat);
+                  <a [href]="url" target="_blank" rel="noopener"
+                    class="flex items-center gap-3 p-3 rounded-xl border bg-white transition-colors hover:shadow-sm"
+                    [ngClass]="matAccent.border">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                      [ngClass]="[matAccent.bg, matAccent.text]">
+                      <span class="icon">{{ fileIconForName(nombreMat) }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-gray-900 truncate">{{ nombreMat }}</p>
+                      @if (r.tamanoBytes) {
+                        <p class="text-xs text-gray-500 mt-0.5">{{ formatFileSize(r.tamanoBytes) }}</p>
+                      }
+                    </div>
+                    <span class="btn btn-secondary btn-sm shrink-0">Abrir</span>
+                  </a>
+                } @else {
+                  <a [href]="url" target="_blank" rel="noopener" class="btn btn-primary btn-sm inline-flex">
+                    <span class="icon icon-sm">open_in_new</span> Abrir recurso
+                  </a>
+                }
+              } @else if (r.descripcion) {
+                <p class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                  Instrucciones publicadas. Si esperabas un archivo adjunto, pide a tu docente que lo suba en Recursos.
+                </p>
+              } @else if (!r.descripcion) {
+                <p class="text-sm text-gray-500 italic">El docente aún no adjuntó instrucciones ni archivos.</p>
+              }
+            </section>
+          } @else if (!svc.cargandoDetalle()) {
+            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 text-center">
+              No hay material del docente vinculado a esta tarea.
+            </div>
+          }
+
+          @if (t.estado === 'GRADED') {
+            <section class="rounded-xl bg-indigo-50 border border-indigo-100 p-4">
+              <div class="flex items-center gap-2 text-sm font-semibold text-indigo-800">
+                <span class="icon icon-sm">grading</span>
+                Calificación: {{ t.nota ?? '—' }}/20
+              </div>
+              @if (t.retroalimentacion) {
+                <p class="text-sm text-indigo-900 mt-2">{{ t.retroalimentacion }}</p>
+              }
+            </section>
+          }
+
+          @if (t.archivoEntregaNombre) {
             @let prevAccent = fileAccentForName(t.archivoEntregaNombre);
-            <div class="rounded-xl border border-dashed p-3" [ngClass]="prevAccent.border">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Entrega actual</p>
+            <section class="rounded-xl border border-dashed p-3" [ngClass]="prevAccent.border">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Tu entrega</p>
               <a [href]="taskFileUrl(t.archivoEntregaUrl)" target="_blank" rel="noopener"
                 class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/70 transition-colors">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -233,10 +319,26 @@ import {
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-gray-800 truncate">{{ t.archivoEntregaNombre }}</p>
-                  <p class="text-xs text-gray-500">Se reemplazará al enviar un nuevo archivo</p>
+                  @if (t.fechaEntregaReal) {
+                    <p class="text-xs text-gray-500">Enviada el {{ svc.formatFecha(t.fechaEntregaReal) }}</p>
+                  }
                 </div>
               </a>
-            </div>
+              @if (t.comentarioEntrega) {
+                <p class="mt-2 text-xs text-gray-500 italic px-2">"{{ t.comentarioEntrega }}"</p>
+              }
+            </section>
+          }
+
+          @if (t.estado === 'PENDING' || t.estado === 'OVERDUE' || t.estado === 'SUBMITTED') {
+            <section id="seccion-entrega" class="space-y-5 pt-1 border-t border-gray-100">
+              <h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <span class="icon icon-sm text-indigo-500">cloud_upload</span>
+                {{ t.estado === 'SUBMITTED' ? 'Reemplazar entrega' : 'Subir entrega' }}
+              </h3>
+
+          @if (t.archivoEntregaNombre && t.estado === 'SUBMITTED') {
+            <p class="text-xs text-gray-500 -mt-3">Al enviar un nuevo archivo reemplazarás la entrega actual.</p>
           }
 
           <div>
@@ -324,16 +426,19 @@ import {
               <span class="icon icon-sm text-indigo-500">info</span> Antes de enviar
             </p>
             <ul class="space-y-1.5 pl-1">
+              <li class="flex items-start gap-2"><span class="text-indigo-400">•</span> Revisa el material del docente antes de entregar.</li>
               <li class="flex items-start gap-2"><span class="text-indigo-400">•</span> Verifica que el archivo sea el correcto y legible.</li>
               <li class="flex items-start gap-2"><span class="text-indigo-400">•</span> Puedes reenviar la entrega antes de que el docente califique.</li>
-              <li class="flex items-start gap-2"><span class="text-indigo-400">•</span> El docente recibirá tu archivo para revisión y calificación.</li>
             </ul>
           </div>
+            </section>
+          }
         </div>
 
+        @if (t.estado === 'PENDING' || t.estado === 'OVERDUE' || t.estado === 'SUBMITTED') {
         <div class="px-6 py-4 border-t border-gray-200 bg-gray-50/80 flex gap-3 shrink-0">
-          <button type="button" class="btn btn-secondary flex-1" [disabled]="svc.saving()" (click)="cerrarEntrega()">
-            Cancelar
+          <button type="button" class="btn btn-secondary flex-1" [disabled]="svc.saving()" (click)="cerrarDetalle()">
+            Cerrar
           </button>
           <button type="button" class="btn btn-primary flex-1 gap-2"
             [disabled]="!archivoSeleccionado() || svc.saving() || !!errorArchivo()"
@@ -345,6 +450,11 @@ import {
             }
           </button>
         </div>
+        } @else {
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50/80 shrink-0">
+          <button type="button" class="btn btn-secondary w-full" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+        }
       </div>
     }
   `,
@@ -361,7 +471,6 @@ export class TareasComponent implements OnInit {
   readonly filtroCurso = signal('');
   readonly filtroBusqueda = signal('');
   readonly toast = signal<{ msg: string; tipo: 'ok' | 'err' } | null>(null);
-  readonly entregaAbierta = signal<TareaEstudiante | null>(null);
   readonly archivoSeleccionado = signal<File | null>(null);
   readonly dragOver = signal(false);
   readonly errorArchivo = signal('');
@@ -370,6 +479,11 @@ export class TareasComponent implements OnInit {
   readonly formatFileSize = formatFileSize;
   readonly fileIconForName = fileIconForName;
   readonly fileAccentForName = fileAccentForName;
+  readonly tipoEmoji = tipoRecursoEmoji;
+  readonly tipoLabel = tipoRecursoLabel;
+  readonly tipoBadge = tipoRecursoBadge;
+  readonly materialUrl = materialRecursoUrl;
+  readonly materialNombre = materialRecursoNombre;
 
   comentarioEntrega = '';
 
@@ -400,18 +514,23 @@ export class TareasComponent implements OnInit {
     this.svc.load();
   }
 
-  abrirEntrega(t: TareaEstudiante): void {
-    this.entregaAbierta.set(t);
+  abrirDetalle(t: TareaEstudiante, enfocarEntrega = false): void {
+    this.svc.abrirDetallePanel(t);
     this.archivoSeleccionado.set(null);
     this.errorArchivo.set('');
     this.dragOver.set(false);
     this.comentarioEntrega = t.comentarioEntrega ?? '';
     this.resetFileInput();
+    if (enfocarEntrega) {
+      queueMicrotask(() => {
+        document.getElementById('seccion-entrega')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   }
 
-  cerrarEntrega(): void {
+  cerrarDetalle(): void {
     if (this.svc.saving()) return;
-    this.entregaAbierta.set(null);
+    this.svc.cerrarDetallePanel();
     this.archivoSeleccionado.set(null);
     this.errorArchivo.set('');
     this.dragOver.set(false);
@@ -472,13 +591,13 @@ export class TareasComponent implements OnInit {
   }
 
   enviarEntrega(): void {
-    const t = this.entregaAbierta();
+    const t = this.svc.detalleTarea();
     const file = this.archivoSeleccionado();
     if (!t || !file) return;
 
     this.svc.submitEntrega(t.id, file, this.comentarioEntrega).subscribe(ok => {
       if (ok) {
-        this.cerrarEntrega();
+        this.cerrarDetalle();
         this.mostrarToast(`Entrega de "${t.titulo}" enviada correctamente`, 'ok');
       } else {
         this.mostrarToast('No se pudo subir la entrega. Verifica el archivo e intenta de nuevo.', 'err');

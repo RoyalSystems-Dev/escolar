@@ -249,7 +249,8 @@ export const routes: Routes = [
           },
           {
             path: 'competencias',
-            loadComponent: () => import('./features/evaluacion/competencias/competencias.component').then(m => m.CompetenciasComponent)
+            redirectTo: 'notas',
+            pathMatch: 'full',
           },
           {
             path: 'promedios',
@@ -355,10 +356,13 @@ export const routes: Routes = [
         path: 'portal-padre',
         canActivate: [roleGuard('PADRE', 'ADMIN')],
         children: [
-          { path: '', redirectTo: 'seguimiento', pathMatch: 'full' },
-          { path: 'seguimiento',  loadComponent: () => import('./features/portal-padre/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent) },
+          { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+          { path: 'inicio',       loadComponent: () => import('./features/portal-padre/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent) },
+          { path: 'seguimiento',  redirectTo: 'inicio', pathMatch: 'full' },
           { path: 'ficha',        loadComponent: () => import('./features/portal-padre/ficha/ficha-hijo.component').then(m => m.FichaHijoComponent) },
           { path: 'horarios',     loadComponent: () => import('./features/portal-padre/horarios/horarios-padre.component').then(m => m.HorariosPadreComponent) },
+          { path: 'tareas',       loadComponent: () => import('./features/portal-padre/tareas/tareas-padre.component').then(m => m.TareasPadreComponent) },
+          { path: 'clases',       loadComponent: () => import('./features/portal-padre/clases/clases-padre.component').then(m => m.ClasesPadreComponent) },
           { path: 'comunicacion', loadComponent: () => import('./features/portal-padre/comunicacion/comunicacion.component').then(m => m.ComunicacionPadreComponent) },
           { path: 'correo-docentes', loadComponent: () => import('./features/portal-padre/correo-docentes/correo-docentes.component').then(m => m.CorreoDocentesComponent) },
           { path: 'finanzas',     loadComponent: () => import('./features/portal-padre/finanzas/finanzas.component').then(m => m.FinanzasPadreComponent) },

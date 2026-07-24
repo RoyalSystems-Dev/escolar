@@ -18,6 +18,10 @@ export interface CursoSeguimiento {
   b2: number | null;
   b3: number | null;
   b4: number | null;
+  b1Nivel?: string | null;
+  b2Nivel?: string | null;
+  b3Nivel?: string | null;
+  b4Nivel?: string | null;
   ultimasNotas: {
     id: number;
     descripcion: string;

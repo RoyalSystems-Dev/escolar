@@ -15,10 +15,6 @@ export function errorInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn)
         router.navigate(['/auth/login']);
       }
 
-      if (err.status === 403 && !req.url.includes('/auth/')) {
-        router.navigate(['/sin-permiso']);
-      }
-
       const messages: Record<number, string> = {
         400: err.error?.message ?? 'Solicitud inválida.',
         403: err.error?.message ?? 'No tiene permisos para realizar esta acción.',

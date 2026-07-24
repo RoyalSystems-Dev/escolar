@@ -2,12 +2,13 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { catchError, switchMap, tap } from 'rxjs/operators';
-import { forkJoin, of } from 'rxjs';
+import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { environment } from '@environments/environment';
-import { ApiCourse, ApiGrade } from '../../../../core/api/api.models';
+import { ApiStudentGrades } from '../../../../core/api/api.models';
 import { AuthService } from '../../../../core/auth/services/auth.service';
-import { HorariosService } from '../../../academico/horarios/services/horarios.service';
+import { GradingConfigService } from '../../../../core/grading/grading-config.service';
+import { PerfilEstudiante } from '../../../academico/horarios/models/horario.model';
 import { PortalEstudianteService } from '../../../portal-estudiante/services/portal-estudiante.service';
 import { CursoNotasEstudiante, NivelLogro, NotaItem } from '../models/nota.model';
 
@@ -24,12 +25,16 @@ const DEFAULT_STYLE = { emoji: '📚', colorClass: 'bg-gray-100 text-gray-800 bo
 export class NotasEstudianteService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private readonly horarios = inject(HorariosService);
+  private readonly grading = inject(GradingConfigService);
   private readonly portal = inject(PortalEstudianteService);
-  private readonly base = environment.apiUrl;
+  private readonly base = `${environment.apiUrl}/students/me/grades`;
+
+  readonly anioEscolar = new Date().getFullYear();
 
   private readonly _cursos = signal<CursoNotasEstudiante[]>([]);
+  private readonly _bimestreActual = signal(1);
   readonly cursos = this._cursos.asReadonly();
+  readonly bimestreActual = this._bimestreActual.asReadonly();
   readonly loading = signal(false);
 
   constructor() {
@@ -41,74 +46,53 @@ export class NotasEstudianteService {
   load(): void {
     this.loading.set(true);
 
-    const perfil$ = this.auth.hasRole('ESTUDIANTE')
-      ? this.portal.ensureLoaded()
-      : of(null);
-
-    perfil$.pipe(
-      switchMap(perfil => {
-        const studentId = perfil?.studentId;
-        const gradesParams = studentId
-          ? new HttpParams().set('studentId', String(studentId))
-          : undefined;
-        return forkJoin({
-          grades: this.http.get<ApiGrade[]>(`${this.base}/grades`, { params: gradesParams }),
-          courses: this.http.get<ApiCourse[]>(`${this.base}/courses`),
-          studentId: of(studentId),
-        });
-      }),
-      tap(({ grades, courses, studentId }) => {
-        const filtered = studentId
-          ? grades.filter(g => g.studentId === studentId)
-          : grades;
-
-        const byCourse = new Map<string, ApiGrade[]>();
-        for (const grade of filtered) {
-          const list = byCourse.get(grade.curso) ?? [];
-          list.push(grade);
-          byCourse.set(grade.curso, list);
-        }
-
-        const mapped = Array.from(byCourse.entries()).map(([nombre, items], index) => {
-          const courseMeta = courses.find(c => c.nombre === nombre);
-          const style = CURSO_STYLE[nombre] ?? DEFAULT_STYLE;
-          const toItem = (g: ApiGrade): NotaItem => ({
-            id: g.id,
-            descripcion: g.descripcion ?? g.tipo,
-            fecha: g.fechaEvaluacion.slice(0, 10),
-            bimestre: g.bimestre,
-            nota: g.nota,
-          });
-          return {
-            id: courseMeta?.id ?? index + 1,
-            nombre,
-            area: courseMeta?.area ?? nombre,
-            emoji: style.emoji,
-            colorClass: style.colorClass,
-            dotClass: style.dotClass,
-            docenteAbrev: courseMeta?.docente ?? 'Docente',
-            controlesDiarios: items.filter(i => i.tipo === 'daily').map(toItem),
-            parciales: items.filter(i => i.tipo === 'partial').map(toItem),
-            finales: items.filter(i => i.tipo === 'final').map(toItem),
-          };
+    const request$ = this.auth.hasRole('ESTUDIANTE')
+      ? this.portal.ensureLoaded().pipe(
+          switchMap(() =>
+            this.http.get<ApiStudentGrades>(this.base, {
+              params: new HttpParams().set('anioEscolar', String(this.anioEscolar)),
+            }),
+          ),
+        )
+      : this.http.get<ApiStudentGrades>(this.base, {
+          params: new HttpParams().set('anioEscolar', String(this.anioEscolar)),
         });
 
-        this._cursos.set(mapped);
-        this.loading.set(false);
-      }),
-      catchError(() => {
-        this.loading.set(false);
-        return of(null);
-      }),
-    ).subscribe();
+    request$
+      .pipe(
+        tap(res => {
+          this._bimestreActual.set(res.bimestreActual);
+          this._cursos.set(res.cursos.map(curso => this.mapCurso(curso)));
+        }),
+        catchError(() => {
+          this._cursos.set([]);
+          return of(null);
+        }),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe();
   }
 
-  getEstudianteId(): string {
-    return this.portal.getStudentIdString() || '5';
+  bimestrePermitido(bimestre: number): boolean {
+    return bimestre <= this._bimestreActual();
   }
 
-  getPerfil() {
-    return this.horarios.getPerfilEstudiante();
+  getPerfil(): PerfilEstudiante {
+    const perfil = this.portal.getPerfilOrNull();
+    if (perfil) {
+      return {
+        nivel: perfil.nivel,
+        grado: perfil.grado,
+        seccion: perfil.seccion,
+        aulaLabel: perfil.aulaLabel,
+      };
+    }
+    return {
+      nivel: 'Primaria',
+      grado: '—',
+      seccion: '—',
+      aulaLabel: '—',
+    };
   }
 
   getCursos(): CursoNotasEstudiante[] {
@@ -120,8 +104,9 @@ export class NotasEstudianteService {
   }
 
   notasPorBimestre(items: NotaItem[], bimestre: number | null): NotaItem[] {
-    if (bimestre === null) return items;
-    return items.filter((i) => i.bimestre === bimestre);
+    const habilitados = items.filter(i => i.bimestre <= this._bimestreActual());
+    if (bimestre === null) return habilitados;
+    return habilitados.filter(i => i.bimestre === bimestre);
   }
 
   promedioItems(items: NotaItem[]): number {
@@ -131,7 +116,7 @@ export class NotasEstudianteService {
 
   promedioCurso(curso: CursoNotasEstudiante, bimestre: number | null = null): number {
     const items = bimestre === null
-      ? this.todasLasNotas(curso)
+      ? this.todasLasNotas(curso).filter(i => i.bimestre <= this._bimestreActual())
       : [
           ...this.notasPorBimestre(curso.controlesDiarios, bimestre),
           ...this.notasPorBimestre(curso.parciales, bimestre),
@@ -141,34 +126,39 @@ export class NotasEstudianteService {
   }
 
   promedioGeneral(cursos: CursoNotasEstudiante[], bimestre: number | null = null): number {
-    const proms = cursos.map((c) => this.promedioCurso(c, bimestre)).filter((p) => p > 0);
+    const proms = cursos.map(c => this.promedioCurso(c, bimestre)).filter(p => p > 0);
     return proms.length ? proms.reduce((s, p) => s + p, 0) / proms.length : 0;
   }
 
   nivelDesdeNota(nota: number): NivelLogro {
-    if (nota >= 17.5) return 'AD';
-    if (nota >= 14) return 'A';
-    if (nota >= 11) return 'B';
-    return 'C';
+    return this.grading.nivelDeNota(nota) as NivelLogro;
   }
 
   nivelBadge(nivel: NivelLogro): string {
-    const map: Record<NivelLogro, string> = {
-      AD: 'badge-indigo',
-      A: 'badge-green',
-      B: 'badge-yellow',
-      C: 'badge-red',
-    };
-    return map[nivel];
+    return this.grading.badgeNivel(nivel);
   }
 
   notaColor(nota: number): string {
-    if (nota >= 14) return 'text-emerald-600';
-    if (nota >= 11) return 'text-amber-600';
-    return 'text-red-600';
+    return this.grading.colorPromedio(nota);
   }
 
   formatFecha(fecha: string): string {
     return format(parseISO(fecha), 'dd/MM/yyyy', { locale: es });
+  }
+
+  private mapCurso(curso: ApiStudentGrades['cursos'][number]): CursoNotasEstudiante {
+    const style = CURSO_STYLE[curso.nombre] ?? DEFAULT_STYLE;
+    return {
+      id: curso.id,
+      nombre: curso.nombre,
+      area: curso.area,
+      emoji: style.emoji,
+      colorClass: style.colorClass,
+      dotClass: style.dotClass,
+      docenteAbrev: curso.docenteAbrev,
+      controlesDiarios: curso.controlesDiarios,
+      parciales: curso.parciales,
+      finales: curso.finales,
+    };
   }
 }

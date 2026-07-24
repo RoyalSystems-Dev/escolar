@@ -164,22 +164,6 @@ import { TareasEstudianteService } from '../tareas/tareas-estudiante.service';
           }
         </div>
       </div>
-
-      <div class="card p-5">
-        <h3 class="font-semibold text-gray-800 mb-3">Accesos rápidos</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          @for (acc of accesosRapidos; track acc.label) {
-            <a
-              [routerLink]="acc.route"
-              class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center" [ngClass]="acc.color">
-                <span class="icon text-white text-lg">{{ acc.icon }}</span>
-              </div>
-              <span class="text-xs text-gray-600 text-center">{{ acc.label }}</span>
-            </a>
-          }
-        </div>
-      </div>
     </div>
   `,
 })
@@ -201,8 +185,9 @@ export class DashboardEstudianteComponent implements OnInit {
 
   readonly registrosAsistencia = computed(() => this.asistenciaSvc.getRegistros());
   readonly mesAsistenciaActual = computed(() => {
+    const mesActual = this.asistenciaSvc.mesActual();
     const meses = this.asistenciaSvc.obtenerMesesDisponibles(this.registrosAsistencia());
-    return meses[0] ?? 'TODOS';
+    return meses.includes(mesActual) ? mesActual : (meses[0] ?? mesActual);
   });
   readonly asistenciaMes = computed(() => {
     const porMes = this.asistenciaSvc.filtrarPorMes(this.registrosAsistencia(), this.mesAsistenciaActual());
@@ -285,18 +270,10 @@ export class DashboardEstudianteComponent implements OnInit {
     this.tareasSvc.pendientes().slice(0, 4),
   );
 
-  readonly accesosRapidos = [
-    { label: 'Mi Horario', route: '/portal-estudiante/horarios', icon: 'schedule', color: 'bg-indigo-500' },
-    { label: 'Mis Notas', route: '/portal-estudiante/notas', icon: 'grading', color: 'bg-emerald-500' },
-    { label: 'Asistencia', route: '/portal-estudiante/asistencia', icon: 'fact_check', color: 'bg-blue-500' },
-    { label: 'Tareas', route: '/portal-estudiante/tareas', icon: 'assignment', color: 'bg-amber-500' },
-    { label: 'Clases', route: '/portal-estudiante/clases', icon: 'menu_book', color: 'bg-teal-500' },
-    { label: 'Comunicados', route: '/portal-estudiante/comunicados', icon: 'campaign', color: 'bg-purple-500' },
-  ];
-
   ngOnInit(): void {
     this.layout.setTitle('Dashboard Estudiante');
     this.tareasSvc.load();
+    this.asistenciaSvc.load();
   }
 
   primerNombre(): string {

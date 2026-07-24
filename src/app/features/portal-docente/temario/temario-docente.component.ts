@@ -11,6 +11,7 @@ import { forkJoin, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
 
 import { AsistenciaDocenteService } from '../asistencia/asistencia-docente.service';
 
@@ -21,12 +22,17 @@ import { PortalDocenteService } from '../portal-docente.service';
 import { PortalDocenteCursoCard } from '../portal-docente.model';
 
 import { RecursosService } from '../recursos/recursos.service';
+import { uploadTipoForFile } from '../recursos/recursos.model';
 
 import { TemarioDocenteService } from './temario-docente.service';
 
 import {
 
   ESTADOS_TEMARIO,
+
+  esImagenClasePermitida,
+
+  IMAGENES_CLASE_ACCEPT,
 
   MODOS_LIBERACION,
 
@@ -57,6 +63,8 @@ import {
   TemarioImagenFormItem,
 
   TemarioMaterialTipo,
+
+  toImagenesClasePayload,
 
   tieneContenidoClase,
 
@@ -92,7 +100,7 @@ type PanelModo = 'ver' | 'editar';
 
   standalone: true,
 
-  imports: [FormsModule, NgClass],
+  imports: [FormsModule, NgClass, OverlayPortalDirective],
 
   template: `
 
@@ -101,19 +109,15 @@ type PanelModo = 'ver' | 'editar';
 
 
   @if (toast()) {
-
-    <div class="fixed bottom-6 right-6 z-[100] flex items-start gap-3 px-5 py-3.5 rounded-xl shadow-2xl border animate-slide-in-r max-w-sm"
-
-      [ngClass]="toast()!.tipo === 'ok' ? 'bg-white border-emerald-300' : 'bg-white border-red-300'">
-
-      <span class="text-lg">{{ toast()!.tipo === 'ok' ? '✓' : '✕' }}</span>
-
-      <p class="text-sm text-gray-700 font-medium flex-1 leading-snug">{{ toast()!.msg }}</p>
-
-      <button type="button" (click)="toast.set(null)" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-
+    <div appOverlayPortal
+      class="fixed bottom-6 right-6 z-[200] flex items-start gap-3 px-5 py-3.5 rounded-xl shadow-2xl border animate-slide-in-r max-w-sm"
+      [ngClass]="toast()!.tipo === 'ok'
+        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+        : 'bg-white border-red-300'">
+      <span class="text-lg shrink-0">{{ toast()!.tipo === 'ok' ? '✓' : '✕' }}</span>
+      <p class="text-sm font-semibold flex-1 leading-snug">{{ toast()!.msg }}</p>
+      <button type="button" (click)="toast.set(null)" class="text-gray-400 hover:text-gray-600 text-xl leading-none shrink-0">×</button>
     </div>
-
   }
 
 
@@ -525,8 +529,13 @@ type PanelModo = 'ver' | 'editar';
                   @for (img of v.imagenesClase; track img.url) {
 
                     <figure class="rounded-xl border border-gray-100 overflow-hidden bg-gray-50">
-
-                      <img [src]="imagenUrl(img)" [alt]="img.nombre" class="w-full h-40 object-cover bg-white">
+                      <button type="button"
+                        class="block w-full text-left group"
+                        (click)="abrirImagenAmpliada(imagenUrl(img), img.nombre, img.leyenda)"
+                        title="Clic para ampliar">
+                        <img [src]="imagenUrl(img)" [alt]="img.nombre"
+                          class="w-full h-40 object-cover bg-white cursor-zoom-in transition-opacity group-hover:opacity-90">
+                      </button>
 
                       <figcaption class="p-3">
 
@@ -662,7 +671,7 @@ type PanelModo = 'ver' | 'editar';
 
                   <h4 class="text-sm font-bold text-gray-800">Imágenes y datos visuales</h4>
 
-                  <p class="text-xs text-gray-400 mt-0.5">Diagramas, pizarras, infografías o fotos de referencia</p>
+                  <p class="text-xs text-gray-400 mt-0.5">JPG, PNG, WEBP, GIF, BMP o SVG · máx. 10 MB</p>
 
                 </div>
 
@@ -670,7 +679,7 @@ type PanelModo = 'ver' | 'editar';
 
                   <span class="icon icon-sm">add_photo_alternate</span> Agregar
 
-                  <input type="file" class="hidden" accept="image/*" multiple (change)="onImagenesFile($event)">
+                  <input type="file" class="hidden" [accept]="imagenesClaseAccept" multiple (change)="onImagenesFile($event)">
 
                 </label>
 
@@ -685,9 +694,13 @@ type PanelModo = 'ver' | 'editar';
                     <div class="rounded-xl border border-gray-100 overflow-hidden">
 
                       @if (imagenPreview(img); as src) {
-
-                        <img [src]="src" [alt]="img.nombre" class="w-full h-32 object-cover bg-gray-50">
-
+                        <button type="button"
+                          class="block w-full"
+                          (click)="abrirImagenAmpliada(src, img.nombre, img.leyenda)"
+                          title="Clic para ampliar">
+                          <img [src]="src" [alt]="img.nombre"
+                            class="w-full h-32 object-cover bg-gray-50 cursor-zoom-in hover:opacity-90 transition-opacity">
+                        </button>
                       }
 
                       <div class="p-3 space-y-2">
@@ -928,6 +941,31 @@ type PanelModo = 'ver' | 'editar';
 
 
 
+  @if (imagenAmpliada(); as img) {
+    <div appOverlayPortal
+      class="fixed inset-0 z-[210] flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-sm"
+      (click)="cerrarImagenAmpliada()">
+      <button type="button"
+        class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
+        (click)="cerrarImagenAmpliada(); $event.stopPropagation()"
+        title="Cerrar">
+        <span class="icon">close</span>
+      </button>
+      <figure class="max-w-[min(100%,56rem)] max-h-[90vh] flex flex-col items-center gap-3" (click)="$event.stopPropagation()">
+        <img [src]="img.src" [alt]="img.alt"
+          class="max-w-full max-h-[calc(90vh-4rem)] object-contain rounded-lg shadow-2xl bg-white">
+        @if (img.leyenda || img.alt) {
+          <figcaption class="text-sm text-white/90 text-center max-w-lg px-2">
+            @if (img.alt) { <span class="font-semibold">{{ img.alt }}</span> }
+            @if (img.leyenda) {
+              <span [class.block]="!!img.alt" [class.mt-1]="!!img.alt">{{ img.leyenda }}</span>
+            }
+          </figcaption>
+        }
+      </figure>
+    </div>
+  }
+
   @if (eliminarTarget(); as target) {
 
     <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
@@ -1004,6 +1042,8 @@ export class TemarioDocenteComponent implements OnInit {
 
   readonly toast = signal<{ msg: string; tipo: 'ok' | 'err' } | null>(null);
 
+  readonly imagenAmpliada = signal<{ src: string; alt: string; leyenda?: string } | null>(null);
+
 
 
   mNumero = 1;
@@ -1061,6 +1101,7 @@ export class TemarioDocenteComponent implements OnInit {
   readonly materialLink = temarioMaterialUrl;
 
   readonly imagenUrl = temarioImagenUrl;
+  readonly imagenesClaseAccept = IMAGENES_CLASE_ACCEPT;
 
   readonly resumen = resumenClase;
 
@@ -1516,9 +1557,14 @@ export class TemarioDocenteComponent implements OnInit {
 
 
 
+    let rechazados = 0;
+
     for (const file of Array.from(files)) {
 
-      if (!file.type.startsWith('image/')) continue;
+      if (!esImagenClasePermitida(file)) {
+        rechazados++;
+        continue;
+      }
 
       this.mImagenes.push({
 
@@ -1534,6 +1580,13 @@ export class TemarioDocenteComponent implements OnInit {
 
       });
 
+    }
+
+    if (rechazados) {
+      this.mostrarToast(
+        `${rechazados} archivo(s) no admitido(s). Use JPG, PNG, WEBP, GIF, BMP o SVG.`,
+        'err',
+      );
     }
 
     input.value = '';
@@ -1670,7 +1723,10 @@ export class TemarioDocenteComponent implements OnInit {
 
             if (!img.pendingFile) return of(img);
 
-            return this.recursosSvc.upload(img.pendingFile, meta).pipe(
+            return this.recursosSvc.upload(img.pendingFile, {
+              ...meta,
+              tipo: 'imagen',
+            }).pipe(
 
               switchMap((uploaded) =>
 
@@ -1700,21 +1756,7 @@ export class TemarioDocenteComponent implements OnInit {
 
       switchMap((imagenes) => {
 
-        const imagenesPayload: TemarioImagenClase[] = imagenes
-
-          .filter((img) => img.url?.trim())
-
-          .map((img) => ({
-
-            url: img.url.trim(),
-
-            nombre: img.nombre.trim() || 'Imagen',
-
-            leyenda: img.leyenda?.trim() ?? '',
-
-            urlDisplay: img.url.trim(),
-
-          }));
+        const imagenesPayload = toImagenesClasePayload(imagenes);
 
 
 
@@ -1730,7 +1772,10 @@ export class TemarioDocenteComponent implements OnInit {
 
         if (this.mMaterialFile) {
 
-          return this.recursosSvc.upload(this.mMaterialFile, meta).pipe(
+          return this.recursosSvc.upload(this.mMaterialFile, {
+            ...meta,
+            tipo: uploadTipoForFile(this.mMaterialFile),
+          }).pipe(
 
             switchMap((uploaded) => {
 
@@ -1816,7 +1861,10 @@ export class TemarioDocenteComponent implements OnInit {
 
       next: (saved) => {
 
-        this.mostrarToast(id ? 'Clase actualizada' : 'Clase agregada', 'ok');
+        this.mostrarToast(
+          id ? 'Clase actualizada exitosamente' : 'Clase guardada exitosamente',
+          'ok',
+        );
 
         this.claseVista.set(saved);
 
@@ -1948,11 +1996,24 @@ export class TemarioDocenteComponent implements OnInit {
 
 
 
+  abrirImagenAmpliada(src: string, alt: string, leyenda?: string): void {
+    if (!src?.trim()) return;
+    this.imagenAmpliada.set({
+      src,
+      alt: alt?.trim() || 'Imagen de clase',
+      leyenda: leyenda?.trim() || undefined,
+    });
+  }
+
+  cerrarImagenAmpliada(): void {
+    this.imagenAmpliada.set(null);
+  }
+
   private mostrarToast(msg: string, tipo: 'ok' | 'err'): void {
 
     this.toast.set({ msg, tipo });
 
-    setTimeout(() => this.toast.set(null), 3500);
+    setTimeout(() => this.toast.set(null), tipo === 'ok' ? 5000 : 3500);
 
   }
 

@@ -7,7 +7,7 @@ import { NgClass } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { ApiResource } from '../../../core/api/api.models';
-
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
 import { AsistenciaDocenteService } from '../asistencia/asistencia-docente.service';
 
 import { DocenteSalonAsignado } from '../asistencia/asistencia-docente.model';
@@ -610,15 +610,15 @@ type FiltroEntrega = 'todos' | 'pendientes' | 'entregadas' | 'calificadas';
 
           <div>
 
-            <label class="form-label">Nota (0 – 20)</label>
+            <label class="form-label">Nota (0 – {{ grading.notaMaxima() }})</label>
 
             <div class="flex items-center gap-3">
 
-              <input type="range" min="0" max="20" step="0.5" class="flex-1 accent-indigo-600"
+              <input type="range" min="0" [max]="grading.notaMaxima()" step="0.5" class="flex-1 accent-indigo-600"
 
                 [(ngModel)]="formNota" [disabled]="!puedeCalificar(e) || svc.saving()">
 
-              <input type="number" min="0" max="20" step="0.5"
+              <input type="number" min="0" [max]="grading.notaMaxima()" step="0.5"
 
                 class="form-input w-20 text-center font-bold text-indigo-700"
 
@@ -703,6 +703,7 @@ export class TareasDocenteComponent implements OnInit {
   private readonly recursosSvc = inject(RecursosService);
 
   readonly svc = inject(TareasDocenteService);
+  readonly grading = inject(GradingConfigService);
 
 
 

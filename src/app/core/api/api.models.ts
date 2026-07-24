@@ -175,12 +175,47 @@ export interface ApiGrade {
   descripcion?: string;
 }
 
+export interface ApiStudentGradeItem {
+  id: number;
+  descripcion: string;
+  fecha: string;
+  bimestre: number;
+  nota: number;
+}
+
+export interface ApiStudentCursoGrades {
+  id: number;
+  nombre: string;
+  area: string;
+  docenteAbrev: string;
+  controlesDiarios: ApiStudentGradeItem[];
+  parciales: ApiStudentGradeItem[];
+  finales: ApiStudentGradeItem[];
+}
+
+export interface ApiStudentGrades {
+  bimestreActual: number;
+  anioEscolar: number;
+  cursos: ApiStudentCursoGrades[];
+}
+
 export interface ApiAttendance {
   id: number;
   studentId: number;
   fecha: string;
   estado: 'P' | 'F' | 'T' | 'J';
   observacion?: string;
+}
+
+export interface ApiTaskResource {
+  id: number;
+  descripcion: string;
+  tipo: ApiResource['tipo'];
+  url: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanoBytes: number;
+  docente: string;
 }
 
 export interface ApiTask {
@@ -191,6 +226,7 @@ export interface ApiTask {
   studentGrado?: string;
   studentSeccion?: string;
   resourceId?: number | null;
+  resource?: ApiTaskResource | null;
   titulo: string;
   curso: string;
   fechaEntrega: string;

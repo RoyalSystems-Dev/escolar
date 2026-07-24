@@ -28,7 +28,7 @@ import {
     <div>
       <h2 class="text-xl font-bold text-gray-800">Estado de Cuenta</h2>
       <p class="text-sm text-gray-500 mt-0.5">
-        {{ auth.nombreCompleto() }} · Matrícula y mensualidades de tus hijos
+        {{ auth.nombreCompleto() }} · Matrícula, mensualidades y otros conceptos
       </p>
     </div>
     <button class="btn btn-secondary btn-sm" (click)="cargar()"
@@ -94,82 +94,132 @@ import {
         }
       </div>
 
-      @if (c.matricula; as mat) {
-        <div class="card p-5">
-          <h4 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <span class="icon text-emerald-600">school</span> Matrícula
-          </h4>
-          <ng-container *ngTemplateOutlet="cargoRow; context: { $implicit: mat, destacado: true }"></ng-container>
-        </div>
-      }
-
-      <div class="card overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-          <h4 class="font-semibold text-gray-800 flex items-center gap-2">
-            <span class="icon text-indigo-600">calendar_month</span> Mensualidades
-          </h4>
-          <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
-            @for (f of filtros; track f.id) {
-              <button type="button"
-                class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
-                [ngClass]="filtro() === f.id ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-800'"
-                (click)="filtro.set(f.id)">
-                {{ f.label }}
-              </button>
+      <div class="tabs">
+        @for (tab of tabs; track tab.id) {
+          <button type="button" class="tab" [class.tab-active]="vista() === tab.id" (click)="vista.set(tab.id)">
+            <span class="icon icon-sm">{{ tab.icon }}</span> {{ tab.label }}
+            @if (tab.id === 'pagos' && pagosRealizados().length) {
+              <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                {{ pagosRealizados().length }}
+              </span>
             }
-          </div>
-        </div>
-
-        @if (!mensualidadesFiltradas().length) {
-          <div class="p-10 text-center text-sm text-gray-400">
-            No hay mensualidades con el filtro seleccionado.
-          </div>
-        } @else {
-          <div class="divide-y divide-gray-100">
-            @for (cargo of mensualidadesFiltradas(); track cargo.id) {
-              <div class="px-5 py-4">
-                <ng-container *ngTemplateOutlet="cargoRow; context: { $implicit: cargo, destacado: false }"></ng-container>
-              </div>
-            }
-          </div>
+          </button>
         }
       </div>
 
-      @if (pagosRealizados().length) {
-        <div class="card p-5">
-          <h4 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <span class="icon text-green-600">payments</span> Pagos realizados
-          </h4>
-          <div class="overflow-x-auto">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Concepto</th>
-                  <th>Método</th>
-                  <th>Boleta</th>
-                  <th class="text-right">Monto</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of pagosRealizados(); track p.id) {
-                  <tr>
-                    <td class="text-sm">{{ formatFechaCorta(p.fechaPago) }}</td>
-                    <td>{{ p.concepto }}</td>
-                    <td class="text-sm text-gray-600">{{ metodoPagoLabel(p.metodoPago) }}</td>
-                    <td class="text-sm text-gray-500">{{ p.numeroBoleta || '—' }}</td>
-                    <td class="text-right font-semibold text-emerald-700">S/ {{ p.monto | number:'1.2-2' }}</td>
-                    <td class="text-right">
-                      <button type="button" class="btn btn-secondary btn-xs" (click)="verBoleta(p.id)">
-                        <span class="icon icon-sm">receipt_long</span> Boleta
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+      @if (vista() === 'cuenta') {
+        @if (c.matricula; as mat) {
+          <div class="card p-5">
+            <h4 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <span class="icon text-emerald-600">school</span> Matrícula
+            </h4>
+            <ng-container *ngTemplateOutlet="cargoRow; context: { $implicit: mat, destacado: true }"></ng-container>
           </div>
+        }
+
+        <div class="card overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+              <span class="icon text-indigo-600">calendar_month</span> Mensualidades
+            </h4>
+            <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+              @for (f of filtros; track f.id) {
+                <button type="button"
+                  class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+                  [ngClass]="filtro() === f.id ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-800'"
+                  (click)="filtro.set(f.id)">
+                  {{ f.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (!mensualidadesFiltradas().length) {
+            <div class="p-10 text-center text-sm text-gray-400">
+              No hay mensualidades con el filtro seleccionado.
+            </div>
+          } @else {
+            <div class="divide-y divide-gray-100">
+              @for (cargo of mensualidadesFiltradas(); track cargo.id) {
+                <div class="px-5 py-4">
+                  <ng-container *ngTemplateOutlet="cargoRow; context: { $implicit: cargo, destacado: false }"></ng-container>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (c.otros.length) {
+          <div class="card overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100">
+              <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+                <span class="icon text-amber-600">receipt</span> Otros conceptos
+              </h4>
+            </div>
+            <div class="divide-y divide-gray-100">
+              @for (cargo of c.otros; track cargo.id) {
+                <div class="px-5 py-4">
+                  <ng-container *ngTemplateOutlet="cargoRow; context: { $implicit: cargo, destacado: false }"></ng-container>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="card overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h4 class="font-semibold text-gray-800 flex items-center gap-2">
+              <span class="icon text-green-600">payments</span> Historial de pagos
+            </h4>
+            <p class="text-xs text-gray-500 mt-1">Matrícula, mensualidades y otros conceptos pagados</p>
+          </div>
+
+          @if (!pagosRealizados().length) {
+            <div class="p-10 text-center text-sm text-gray-400">
+              <span class="icon icon-xl mb-3 block">payments</span>
+              Aún no hay pagos registrados para este alumno.
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th>Método</th>
+                    <th>Boleta</th>
+                    <th class="text-right">Monto</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of pagosRealizados(); track p.id) {
+                    <tr>
+                      <td class="text-sm">{{ formatFechaCorta(p.fechaPago) }}</td>
+                      <td>
+                        <span class="badge text-[10px]" [ngClass]="tipoPagoBadge(p.tipo)">{{ p.tipo }}</span>
+                      </td>
+                      <td>
+                        <p class="font-medium text-gray-800">{{ p.concepto }}</p>
+                        @if (p.periodoLabel && p.periodoLabel !== p.concepto) {
+                          <p class="text-xs text-gray-500">{{ p.periodoLabel }}</p>
+                        }
+                      </td>
+                      <td class="text-sm text-gray-600">{{ metodoPagoLabel(p.metodoPago) }}</td>
+                      <td class="text-sm text-gray-500">{{ p.numeroBoleta || '—' }}</td>
+                      <td class="text-right font-semibold text-emerald-700">S/ {{ p.monto | number:'1.2-2' }}</td>
+                      <td class="text-right">
+                        <button type="button" class="btn btn-secondary btn-xs" (click)="verBoleta(p.id)">
+                          <span class="icon icon-sm">receipt_long</span> Boleta
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
     } @else {
@@ -195,47 +245,22 @@ import {
       </div>
       <p class="text-xs text-gray-500 mt-0.5">{{ cargo.concepto }} · Vence {{ formatFechaCorta(cargo.fechaVencimiento) }}</p>
     </div>
-    <div class="flex flex-wrap items-center gap-4 text-sm shrink-0">
-      <div class="text-right">
-        <p class="text-xs text-gray-400">Monto</p>
-        <p class="font-semibold">S/ {{ cargo.monto | number:'1.2-2' }}</p>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-gray-400">Pagado</p>
-        <p class="font-semibold text-emerald-700">S/ {{ cargo.montoPagado | number:'1.2-2' }}</p>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-gray-400">Saldo</p>
-        <p class="font-bold" [ngClass]="cargo.saldo > 0 ? 'text-amber-700' : 'text-gray-400'">
-          S/ {{ cargo.saldo | number:'1.2-2' }}
-        </p>
-      </div>
+    <div class="flex flex-wrap items-center gap-3 shrink-0">
+      <p class="text-lg font-bold tabular-nums"
+        [ngClass]="cargo.saldo > 0 ? 'text-gray-900' : 'text-emerald-700'">
+        S/ {{ cargo.monto | number:'1.2-2' }}
+      </p>
       @if (cargo.saldo > 0) {
-        <button type="button" class="btn btn-primary btn-sm whitespace-nowrap" (click)="abrirPagoVisa(cargo)">
-          <span class="icon icon-sm">credit_card</span> Pagar con Visa
+        <button type="button"
+          class="btn btn-primary btn-icon shrink-0"
+          title="Pagar mensualidad"
+          aria-label="Pagar mensualidad"
+          (click)="abrirPagoVisa(cargo)">
+          <span class="icon">credit_card</span>
         </button>
       }
     </div>
   </div>
-  @if (cargo.pagos.length) {
-    <div class="mt-3 pl-3 border-l-2 border-emerald-200 space-y-1.5">
-      @for (p of cargo.pagos; track p.id) {
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
-          <span class="inline-flex items-center gap-1">
-            <span class="icon icon-sm text-emerald-600">check_circle</span>
-            {{ formatFechaCorta(p.fechaPago) }}
-          </span>
-          <span>{{ metodoPagoLabel(p.metodoPago) }}</span>
-          @if (p.numeroBoleta) {
-            <span class="text-gray-400">{{ p.numeroBoleta }}</span>
-          }
-          <span class="font-semibold text-emerald-700">S/ {{ p.monto | number:'1.2-2' }}</span>
-          <button type="button" class="text-indigo-600 hover:text-indigo-800 font-medium ml-auto"
-            (click)="verBoleta(p.id)">Ver boleta</button>
-        </div>
-      }
-    </div>
-  }
 </ng-template>
 
 @if (modalPago()) {
@@ -244,8 +269,8 @@ import {
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b">
         <div>
-          <h3 class="font-bold text-gray-900">Pagar con Visa</h3>
-          <p class="text-xs text-gray-500">{{ cargoPago()?.periodoLabel }} · S/ {{ cargoPago()?.saldo | number:'1.2-2' }}</p>
+          <h3 class="font-bold text-gray-900">Pagar mensualidad</h3>
+          <p class="text-xs text-gray-500">{{ cargoPago()?.periodoLabel }} · S/ {{ cargoPago()?.monto | number:'1.2-2' }}</p>
         </div>
         <button type="button" class="btn-icon text-gray-400" (click)="cerrarPagoVisa()">
           <span class="icon">close</span>
@@ -400,6 +425,12 @@ export class FinanzasPadreComponent implements OnInit {
     cvv: '',
   };
 
+  vista = signal<'cuenta' | 'pagos'>('cuenta');
+  readonly tabs: { id: 'cuenta' | 'pagos'; label: string; icon: string }[] = [
+    { id: 'cuenta', label: 'Por pagar', icon: 'account_balance_wallet' },
+    { id: 'pagos', label: 'Pagos realizados', icon: 'payments' },
+  ];
+
   filtro = signal<FiltroCargo>('todos');
   readonly filtros: { id: FiltroCargo; label: string }[] = [
     { id: 'todos', label: 'Todas' },
@@ -431,17 +462,21 @@ export class FinanzasPadreComponent implements OnInit {
   pagosRealizados = computed(() => {
     const c = this.cuenta();
     if (!c) return [];
-    const cargos = [
-      ...(c.matricula ? [c.matricula] : []),
-      ...c.mensualidades,
-      ...c.otros,
+    const grupos: { tipo: string; cargos: CargoCuenta[] }[] = [
+      ...(c.matricula ? [{ tipo: 'Matrícula', cargos: [c.matricula] }] : []),
+      { tipo: 'Mensualidad', cargos: c.mensualidades },
+      { tipo: 'Otro', cargos: c.otros },
     ];
-    return cargos
-      .flatMap(cargo =>
-        cargo.pagos.map(p => ({
-          ...p,
-          concepto: cargo.periodoLabel,
-        })),
+    return grupos
+      .flatMap(({ tipo, cargos }) =>
+        cargos.flatMap(cargo =>
+          cargo.pagos.map(p => ({
+            ...p,
+            tipo,
+            concepto: cargo.concepto,
+            periodoLabel: cargo.periodoLabel,
+          })),
+        ),
       )
       .sort((a, b) => b.fechaPago.localeCompare(a.fechaPago));
   });
@@ -464,7 +499,17 @@ export class FinanzasPadreComponent implements OnInit {
   seleccionarHijo(hijo: HijoResumen): void {
     if (this.hijoId() === hijo.studentId) return;
     this.filtro.set('todos');
+    this.vista.set('cuenta');
     this.svc.seleccionarHijo(hijo).subscribe();
+  }
+
+  tipoPagoBadge(tipo: string): string {
+    const map: Record<string, string> = {
+      Matrícula: 'badge-green',
+      Mensualidad: 'badge-blue',
+      Otro: 'badge-orange',
+    };
+    return map[tipo] ?? 'badge-gray';
   }
 
   abrirPagoVisa(cargo: CargoCuenta): void {
@@ -510,6 +555,7 @@ export class FinanzasPadreComponent implements OnInit {
     }).subscribe({
       next: result => {
         this.cerrarPagoVisa();
+        this.vista.set('pagos');
         this.mostrarToast('success', `Pago registrado · Boleta ${result.numeroBoleta}`);
         this.svc.loadEstadoCuenta(studentId).subscribe();
       },

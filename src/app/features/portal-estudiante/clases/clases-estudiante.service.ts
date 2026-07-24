@@ -3,9 +3,8 @@ import { HorariosService } from '../../academico/horarios/services/horarios.serv
 import { TemarioClaseItem } from '../../portal-docente/temario/temario.model';
 import { ApiResource } from '../../../core/api/api.models';
 import {
-  cabeceraCursoUrl,
   CursoClaseEstudiante,
-  primeraImagenSesion,
+  inicialesCurso,
   SesionClaseDetalle,
 } from './clases.model';
 
@@ -36,7 +35,7 @@ export class ClasesEstudianteService {
             : 'Docente',
           sesionesSemana: 0,
           diasSemana: [],
-          imagenCabecera: cabeceraCursoUrl(curso.nombre),
+          iniciales: inicialesCurso(curso.nombre),
         });
       }
 
@@ -56,9 +55,11 @@ export class ClasesEstudianteService {
     temario: TemarioClaseItem[],
     recursos: ApiResource[],
   ): SesionClaseDetalle[] {
-    const temasLiberados = temario
-      .filter(t => t.liberadoAlumno !== false)
-      .sort((a, b) => a.fechaClase.localeCompare(b.fechaClase) || a.numero - b.numero);
+    const temasLiberados = this.dedupeTemas(
+      temario
+        .filter(t => t.liberadoAlumno !== false)
+        .sort((a, b) => a.fechaClase.localeCompare(b.fechaClase) || a.numero - b.numero || a.id - b.id),
+    );
 
     const fechas = [
       ...new Set(temasLiberados.map(t => t.fechaClase.slice(0, 10))),
@@ -70,17 +71,23 @@ export class ClasesEstudianteService {
         .filter(r => r.fechaPublicacion.slice(0, 10) === fecha)
         .sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
 
-      const cabecera = primeraImagenSesion(temas);
-
       return {
         orden: index + 1,
         fechaClase: fecha,
         fechaClaseDisplay: temas[0]?.fechaClaseDisplay ?? fecha,
         temas,
         recursos: recursosSesion,
-        imagenCabecera: cabecera?.url ?? null,
-        imagenCabeceraAlt: cabecera?.alt ?? `Clase ${index + 1}`,
       };
     });
+  }
+
+  /** Evita duplicados por nombre de curso + fecha + título. */
+  private dedupeTemas(items: TemarioClaseItem[]): TemarioClaseItem[] {
+    const seen = new Map<string, TemarioClaseItem>();
+    for (const item of items) {
+      const key = `${item.fechaClase.slice(0, 10)}|${item.titulo.trim().toLowerCase()}`;
+      if (!seen.has(key)) seen.set(key, item);
+    }
+    return [...seen.values()];
   }
 }

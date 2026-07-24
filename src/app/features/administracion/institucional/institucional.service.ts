@@ -41,12 +41,45 @@ export class InstitucionalService {
     modulos: ModuloSistema[];
   }) {
     this.saving.set(true);
-    return this.http.patch(`${this.base}`, {
-      ...payload.inst,
+    const inst = payload.inst;
+    const body: Record<string, unknown> = {
+      nombre: inst.nombre,
+      siglas: inst.siglas,
+      ruc: inst.ruc,
+      codigoModular: inst.codigoModular,
+      tipoGestion: inst.tipoGestion,
+      ugel: inst.ugel,
+      dre: inst.dre,
+      resolucion: inst.resolucion,
+      direccion: inst.direccion,
+      distrito: inst.distrito,
+      provincia: inst.provincia,
+      region: inst.region,
+      codigoPostal: inst.codigoPostal,
+      telefono: inst.telefono,
+      telefono2: inst.telefono2,
+      email: inst.email,
+      web: inst.web,
+      facebook: inst.facebook,
+      director: inst.director,
+      subdirector: inst.subdirector,
+      administrador: inst.administrador,
+      anio: inst.anio,
+      sistemaEval: inst.sistemaEval,
+      tipoPeriodo: inst.tipoPeriodo,
+      notaMinima: Number(inst.notaMinima),
       periodos: payload.periodos,
       config: payload.config,
       modulos: payload.modulos,
-    }).pipe(
+    };
+    if (inst.escalaLogro) {
+      body['escalaLogro'] = {
+        AD: Number(inst.escalaLogro.AD),
+        A: Number(inst.escalaLogro.A),
+        B: Number(inst.escalaLogro.B),
+      };
+    }
+    return this.http.patch<InstitutionConfigResponse['institution']>(`${this.base}`, body).pipe(
       tap(() => this.saving.set(false)),
       catchError(err => {
         this.saving.set(false);

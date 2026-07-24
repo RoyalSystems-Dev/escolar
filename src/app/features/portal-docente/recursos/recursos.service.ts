@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, finalize, throwError } from 'rxjs';
 import { environment } from '@environments/environment';
 import { ApiResource } from '../../../core/api/api.models';
-import { RecursoFilters, RecursoPayload, RecursoUploadResponse } from './recursos.model';
+import { RecursoFilters, RecursoPayload, RecursoUpdatePayload, RecursoUploadResponse } from './recursos.model';
 
 @Injectable({ providedIn: 'root' })
 export class RecursosService {
@@ -56,9 +56,17 @@ export class RecursosService {
     );
   }
 
-  update(id: number, payload: Partial<RecursoPayload>): Observable<ApiResource> {
+  update(id: number, payload: RecursoUpdatePayload): Observable<ApiResource> {
     this.saving.set(true);
     return this.http.patch<ApiResource>(`${this.base}/${id}`, payload).pipe(
+      catchError((err) => throwError(() => err)),
+      finalize(() => this.saving.set(false)),
+    );
+  }
+
+  setVisibility(id: number, visible: boolean): Observable<ApiResource> {
+    this.saving.set(true);
+    return this.http.patch<ApiResource>(`${this.base}/${id}/visibility`, { visible }).pipe(
       catchError((err) => throwError(() => err)),
       finalize(() => this.saving.set(false)),
     );

@@ -96,6 +96,39 @@ export class TareasEstudianteService {
     );
   }
 
+  loadDetalle(id: number): Observable<TareaEstudiante | null> {
+    return this.http.get<ApiTask>(`${this.base}/${id}`).pipe(
+      map(item => this.mapTask(item)),
+      tap(mapped => {
+        this._tareas.update(list => list.map(t => (t.id === id ? mapped : t)));
+        const abierto = this._detalleAbiertoId();
+        if (abierto === id) {
+          this._detalleTarea.set(mapped);
+        }
+      }),
+      catchError(() => of(null)),
+    );
+  }
+
+  private readonly _detalleAbiertoId = signal<number | null>(null);
+  private readonly _detalleTarea = signal<TareaEstudiante | null>(null);
+  readonly detalleTarea = this._detalleTarea.asReadonly();
+  readonly cargandoDetalle = signal(false);
+
+  abrirDetallePanel(t: TareaEstudiante): void {
+    this._detalleAbiertoId.set(t.id);
+    this._detalleTarea.set(t);
+    this.cargandoDetalle.set(true);
+    this.loadDetalle(t.id).pipe(
+      finalize(() => this.cargandoDetalle.set(false)),
+    ).subscribe();
+  }
+
+  cerrarDetallePanel(): void {
+    this._detalleAbiertoId.set(null);
+    this._detalleTarea.set(null);
+  }
+
   getEstudianteId(): string {
     return this.portal.getStudentIdString() || '5';
   }
@@ -127,6 +160,8 @@ export class TareasEstudianteService {
       diasRestantes: dias,
       venceHoy,
       vencida: vencida || t.estado === 'OVERDUE',
+      resourceId: t.resourceId ?? null,
+      recurso: t.resource ?? null,
       comentarioEntrega: t.comentarioEntrega ?? '',
       archivoEntregaUrl: t.archivoEntregaUrl ?? null,
       archivoEntregaNombre: t.archivoEntregaNombre ?? null,

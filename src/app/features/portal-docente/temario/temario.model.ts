@@ -34,7 +34,7 @@ export interface TemarioClasePayload {
   descripcion?: string;
   objetivos?: string;
   contenidoClase?: string;
-  imagenesClase?: TemarioImagenClase[];
+  imagenesClase?: TemarioImagenClasePayload[];
   fechaClase: string;
   estado?: TemarioClaseEstado;
   visibleEstudiante?: boolean;
@@ -56,7 +56,7 @@ export interface TemarioClaseUpdatePayload {
   descripcion?: string;
   objetivos?: string;
   contenidoClase?: string;
-  imagenesClase?: TemarioImagenClase[];
+  imagenesClase?: TemarioImagenClasePayload[];
   fechaClase?: string;
   estado?: TemarioClaseEstado;
   visibleEstudiante?: boolean;
@@ -155,4 +155,44 @@ export function tieneMaterialTemario(c: Pick<TemarioClaseItem, 'tieneMaterial' |
 
 export function materialTemarioLabel(tipo: TemarioMaterialTipo): string {
   return TIPOS_MATERIAL_TEMARIO.find((t) => t.value === tipo)?.label ?? tipo;
+}
+
+/** Formatos admitidos al adjuntar imágenes en crear/editar clase. */
+export const IMAGENES_CLASE_ACCEPT =
+  'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/svg+xml,.jpg,.jpeg,.png,.webp,.gif,.bmp,.svg';
+
+const IMAGENES_CLASE_EXT = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.svg',
+]);
+
+export function esImagenClasePermitida(file: File): boolean {
+  if (file.type.startsWith('image/')) return true;
+  const dot = file.name.lastIndexOf('.');
+  if (dot < 0) return false;
+  return IMAGENES_CLASE_EXT.has(file.name.slice(dot).toLowerCase());
+}
+
+/** Solo campos aceptados por el API al guardar imágenes de clase. */
+export interface TemarioImagenClasePayload {
+  url: string;
+  nombre: string;
+  leyenda?: string;
+}
+
+export function toImagenesClasePayload(
+  items: Array<Partial<TemarioImagenFormItem> & { urlDisplay?: string }>,
+): TemarioImagenClasePayload[] {
+  return items
+    .filter((img) => img.url?.trim())
+    .map((img) => ({
+      url: img.url!.trim(),
+      nombre: img.nombre?.trim() || 'Imagen',
+      leyenda: img.leyenda?.trim() ?? '',
+    }));
 }

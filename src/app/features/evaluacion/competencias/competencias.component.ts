@@ -1,7 +1,9 @@
-﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
+import { PortalDocenteCursoCard } from '../../portal-docente/portal-docente.model';
 import { InstitucionalService } from '../../administracion/institucional/institucional.service';
 import {
   AlumnoCompetencia,
@@ -25,6 +27,23 @@ type IdMap = Map<string, number>;
   standalone: true,
   imports: [NgClass, FormsModule],
   template: `
+@if (!grading.usesCompetencias()) {
+  <div class="card p-8 text-center space-y-3 animate-fade-in">
+    <span class="icon text-4xl text-gray-300">stars</span>
+    <h2 class="text-lg font-semibold text-gray-800">Evaluación por competencias deshabilitada</h2>
+    <p class="text-sm text-gray-500 max-w-md mx-auto">
+      La institución usa calificación {{ grading.labelSistema() }}.
+      @if (grading.usesNumeric()) {
+        Utilice <strong>Registro de Notas</strong> para ingresar calificaciones numéricas.
+      }
+    </p>
+  </div>
+} @else {
+@if (!periodoResuelto()) {
+  <div class="card p-10 text-center text-gray-500 animate-fade-in">
+    Consultando periodo académico…
+  </div>
+} @else {
 <div class="animate-fade-in space-y-5" (click)="closePicker()">
 
   @if (toast()) {
@@ -36,6 +55,7 @@ type IdMap = Map<string, number>;
     </div>
   }
 
+  @if (!modoEmbeddido()) {
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Evaluación por Competencias</h2>
@@ -43,6 +63,11 @@ type IdMap = Map<string, number>;
         Registro de niveles de logro · {{ selNivel() }} {{ selGrado() }} {{ selSeccion() }} · Bimestre {{ selBimestre() }}
         @if (anioEscolar()) { · {{ anioEscolar() }} }
       </p>
+      @if (bimestreActual()) {
+        <p class="text-xs text-amber-600 mt-1">
+          Periodo actual: {{ bimestreActual() }}° bimestre — solo B1 a B{{ bimestreActual() }} habilitados
+        </p>
+      }
     </div>
     <div class="flex gap-2">
       <button class="btn btn-secondary text-sm gap-1.5" (click)="cargar()" [disabled]="loading()">
@@ -52,8 +77,8 @@ type IdMap = Map<string, number>;
         Actualizar
       </button>
       <button class="btn btn-primary text-sm gap-2" (click)="guardar()"
-        [disabled]="!hasChanges() || saving() || loading()"
-        [ngClass]="!hasChanges() || saving() ? 'opacity-50 cursor-not-allowed' : ''">
+        [disabled]="!hasChanges() || saving() || loading() || !bimestreHabilitado()"
+        [ngClass]="!hasChanges() || saving() || !bimestreHabilitado() ? 'opacity-50 cursor-not-allowed' : ''">
         @if (hasChanges()) {
           <span class="w-2 h-2 rounded-full bg-amber-300 shrink-0"></span>
         }
@@ -64,13 +89,42 @@ type IdMap = Map<string, number>;
       </button>
     </div>
   </div>
+  } @else {
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div>
+      <p class="text-sm text-gray-500">
+        Niveles de logro · {{ selNivel() }} {{ selGrado() }} {{ selSeccion() }}
+        @if (cursoInicial()?.cursoNombre) { · {{ cursoInicial()!.cursoNombre }} }
+        @if (anioEscolar()) { · {{ anioEscolar() }} }
+      </p>
+      @if (bimestreActual()) {
+        <p class="text-xs text-amber-600 mt-1">
+          Periodo actual: {{ bimestreActual() }}° bimestre — solo B1 a B{{ bimestreActual() }} habilitados
+        </p>
+      }
+    </div>
+    <div class="flex gap-2 shrink-0">
+      <button class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="loading()">Actualizar</button>
+      <button class="btn btn-primary btn-sm" (click)="guardar()"
+        [disabled]="!hasChanges() || saving() || loading() || !bimestreHabilitado()">
+        {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+  }
 
   @if (error()) {
     <div class="card p-4 border-red-200 bg-red-50 text-red-700 text-sm">{{ error() }}</div>
   }
 
-  <!-- Filtros siempre visibles -->
+  <!-- Filtros -->
   <div class="card p-3 flex flex-wrap gap-4 items-center">
+    @if (modoEmbeddido()) {
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <span class="badge badge-indigo">{{ selNivel() }}</span>
+        <span class="font-semibold text-gray-800">{{ selGrado() }} — Sección {{ selSeccion() }}</span>
+      </div>
+    } @else {
     <div class="flex items-center gap-2">
       <label class="text-xs text-gray-500 font-medium uppercase tracking-wide">Nivel académico</label>
       <select class="form-input text-sm w-40" [ngModel]="selNivel()" (ngModelChange)="onNivelChange($event)">
@@ -97,12 +151,17 @@ type IdMap = Map<string, number>;
         }
       </select>
     </div>
+    }
     <div class="flex items-center gap-2 ml-auto">
       <label class="text-xs text-gray-500 font-medium uppercase tracking-wide">Bimestre</label>
       <div class="flex rounded-xl overflow-hidden border border-gray-200 divide-x divide-gray-200">
-        @for (b of [1,2,3,4]; track b) {
-          <button class="px-3.5 py-1.5 text-sm font-medium transition-all"
-            [ngClass]="selBimestre()===b ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-indigo-50'"
+        @for (b of bimestres; track b) {
+          <button type="button" class="px-3.5 py-1.5 text-sm font-medium transition-all"
+            [disabled]="!bimestrePermitido(b)"
+            [title]="bimestrePermitido(b) ? '' : 'Bimestre aún no habilitado'"
+            [ngClass]="!bimestrePermitido(b)
+              ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+              : selBimestre()===b ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-indigo-50'"
             (click)="onBimestreChange(b)">
             B{{ b }}
           </button>
@@ -115,8 +174,13 @@ type IdMap = Map<string, number>;
     <div class="card p-8 text-center text-gray-500">Cargando evaluaciones…</div>
   } @else if (!areas().length) {
     <div class="card p-8 text-center text-gray-500">
-      No hay competencias configuradas para {{ selNivel() }} {{ selGrado() }} {{ selSeccion() }}.
-      <p class="text-xs mt-2 text-gray-400">Prueba otro nivel académico o verifica la malla curricular.</p>
+      @if (modoEmbeddido() && cursoInicial()?.cursoNombre) {
+        No hay competencias configuradas para <strong>{{ cursoInicial()!.cursoNombre }}</strong>
+        en {{ selNivel() }} {{ selGrado() }} {{ selSeccion() }}.
+      } @else {
+        No hay competencias configuradas para {{ selNivel() }} {{ selGrado() }} {{ selSeccion() }}.
+      }
+      <p class="text-xs mt-2 text-gray-400">Verifica la malla curricular del curso asignado.</p>
     </div>
   } @else {
 
@@ -190,9 +254,12 @@ type IdMap = Map<string, number>;
                 @let nivel = getNivel(al.id, c.id);
                 <td class="px-2 py-3 text-center">
                   <div class="relative inline-flex justify-center">
-                    <button
-                      class="w-14 h-8 rounded-lg border text-xs font-bold transition-all hover:shadow-sm hover:scale-105"
-                      [ngClass]="nivel ? NCFG[nivel].badge : 'bg-gray-50 border-gray-200 text-gray-300 hover:border-indigo-200 hover:text-indigo-300'"
+                    <button type="button"
+                      class="w-14 h-8 rounded-lg border text-xs font-bold transition-all"
+                      [disabled]="!bimestreHabilitado()"
+                      [ngClass]="!bimestreHabilitado()
+                        ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                        : nivel ? NCFG[nivel].badge : 'bg-gray-50 border-gray-200 text-gray-300 hover:border-indigo-200 hover:text-indigo-300 hover:shadow-sm hover:scale-105'"
                       (click)="$event.stopPropagation(); togglePicker(al.id, c.id)">
                       {{ nivel ?? '–' }}
                     </button>
@@ -253,9 +320,13 @@ type IdMap = Map<string, number>;
           <button (click)="selAlumno.set(null)" class="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
         </div>
         <div class="flex border-b border-gray-100 divide-x divide-gray-100">
-          @for (b of [1,2,3,4]; track b) {
-            <button class="flex-1 py-2 text-xs font-semibold transition-colors"
-              [ngClass]="selBimestre()===b ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'"
+          @for (b of bimestres; track b) {
+            <button type="button" class="flex-1 py-2 text-xs font-semibold transition-colors"
+              [disabled]="!bimestrePermitido(b)"
+              [title]="bimestrePermitido(b) ? '' : 'Bimestre aún no habilitado'"
+              [ngClass]="!bimestrePermitido(b)
+                ? 'text-gray-300 cursor-not-allowed bg-gray-50'
+                : selBimestre()===b ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'"
               (click)="onBimestreChange(b)">
               B{{ b }}
             </button>
@@ -316,15 +387,26 @@ type IdMap = Map<string, number>;
 
   }
 </div>
+}
+}
   `,
 })
 export class CompetenciasComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   private readonly service = inject(CompetenciasService);
   private readonly institucional = inject(InstitucionalService);
+  readonly grading = inject(GradingConfigService);
+
+  readonly cursoInicial = input<PortalDocenteCursoCard | null>(null);
+
+  readonly modoEmbeddido = computed(() => {
+    const c = this.cursoInicial();
+    return !!(c?.nivel && c?.grado && c?.seccion);
+  });
 
   readonly niveles = NIVELES;
   readonly NCFG = NCFG;
+  readonly bimestres = [1, 2, 3, 4];
 
   areas = signal<AreaCompetencia[]>([]);
   alumnos = signal<AlumnoCompetencia[]>([]);
@@ -340,6 +422,9 @@ export class CompetenciasComponent implements OnInit {
   selAlumno = signal<AlumnoCompetencia | null>(null);
   activePicker = signal<string | null>(null);
   hasChanges = signal(false);
+  bimestreActual = signal(1);
+  bimestreHabilitado = signal(true);
+  periodoResuelto = signal(false);
   toast = signal<{ msg: string; tipo: 'ok' | 'err' } | null>(null);
   error = signal<string | null>(null);
   anioEscolar = signal<number | null>(null);
@@ -390,7 +475,41 @@ export class CompetenciasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.layout.setTitle('Evaluación por Competencias');
+    this.layout.setTitle(
+      this.modoEmbeddido() ? 'Competencias — Curso asignado' : 'Evaluación por Competencias',
+    );
+    this.aplicarFiltroCursoInicial();
+    this.service.loadPeriodMeta().subscribe({
+      next: (meta) => {
+        this.aplicarPeriodoActual(meta.bimestreActual);
+        this.periodoResuelto.set(true);
+        this.iniciarDatos();
+      },
+      error: () => {
+        this.periodoResuelto.set(true);
+        this.iniciarDatos();
+      },
+    });
+  }
+
+  bimestrePermitido(bimestre: number): boolean {
+    return bimestre <= this.bimestreActual();
+  }
+
+  private aplicarPeriodoActual(actual: number): void {
+    this.bimestreActual.set(actual);
+    if (this.selBimestre() > actual) {
+      this.selBimestre.set(actual);
+    }
+    this.bimestreHabilitado.set(this.selBimestre() <= actual);
+  }
+
+  private iniciarDatos(): void {
+    if (this.modoEmbeddido()) {
+      this.cargar();
+      return;
+    }
+
     this.institucional.loadEducationLevels().subscribe({
       next: (niveles) => {
         const activos = niveles.filter((n) => n.activo !== false);
@@ -399,10 +518,19 @@ export class CompetenciasComponent implements OnInit {
         this.gradosPorNivel.set(gradosPorNivel);
         this.seccionesPorGrado.set(seccionesPorGrado);
         this.syncFiltrosConInstitucion();
+        this.aplicarFiltroCursoInicial();
         this.cargar();
       },
       error: () => this.cargar(),
     });
+  }
+
+  private aplicarFiltroCursoInicial(): void {
+    const c = this.cursoInicial();
+    if (!c?.nivel || !c.grado || !c.seccion) return;
+    this.selNivel.set(c.nivel);
+    this.selGrado.set(c.grado);
+    this.selSeccion.set(c.seccion.toUpperCase());
   }
 
   private syncFiltrosConInstitucion(): void {
@@ -422,6 +550,11 @@ export class CompetenciasComponent implements OnInit {
 
   cargar(): void {
     if (!this.selNivel() || !this.selGrado() || !this.selSeccion()) return;
+    const curso = this.cursoInicial();
+    if (this.modoEmbeddido() && !curso?.cursoId) {
+      this.error.set('No se pudo identificar el curso asignado.');
+      return;
+    }
     this.error.set(null);
     this.service
       .loadMatrix({
@@ -429,9 +562,19 @@ export class CompetenciasComponent implements OnInit {
         grado: this.selGrado(),
         seccion: this.selSeccion(),
         bimestre: this.selBimestre(),
+        cursoId: this.modoEmbeddido() ? curso!.cursoId : undefined,
       })
       .subscribe({
         next: (data) => {
+          this.bimestreActual.set(data.bimestreActual);
+          this.bimestreHabilitado.set(data.bimestreHabilitado);
+          if (this.selBimestre() > data.bimestreActual) {
+            this.selBimestre.set(data.bimestreActual);
+            this.bimestreHabilitado.set(true);
+            this.cargar();
+            return;
+          }
+
           this.areas.set(data.areas);
           this.alumnos.set(data.alumnos);
           this.anioEscolar.set(data.curriculum.anio);
@@ -492,7 +635,12 @@ export class CompetenciasComponent implements OnInit {
   }
 
   onBimestreChange(bim: number): void {
+    if (!this.bimestrePermitido(bim)) return;
+    if (this.selBimestre() === bim) return;
     this.selBimestre.set(bim);
+    this.bimestreHabilitado.set(bim <= this.bimestreActual());
+    this.selAlumno.set(null);
+    this.closePicker();
     this.cargar();
   }
 
@@ -539,6 +687,7 @@ export class CompetenciasComponent implements OnInit {
   }
 
   setNivel(alumnoId: number, compId: number, nivel: NivelLogro): void {
+    if (!this.bimestreHabilitado()) return;
     const key = eKey(alumnoId, compId, this.selBimestre());
     this.evalMap.update((m) => {
       const nm = new Map(m);
@@ -551,6 +700,7 @@ export class CompetenciasComponent implements OnInit {
   }
 
   clearNivel(alumnoId: number, compId: number): void {
+    if (!this.bimestreHabilitado()) return;
     const key = eKey(alumnoId, compId, this.selBimestre());
     this.evalMap.update((m) => {
       const nm = new Map(m);
@@ -563,6 +713,7 @@ export class CompetenciasComponent implements OnInit {
   }
 
   togglePicker(alumnoId: number, compId: number): void {
+    if (!this.bimestreHabilitado()) return;
     const k = `${alumnoId}-${compId}`;
     this.activePicker.set(this.activePicker() === k ? null : k);
   }
@@ -576,6 +727,7 @@ export class CompetenciasComponent implements OnInit {
   }
 
   guardar(): void {
+    if (!this.bimestreHabilitado()) return;
     const entries: SaveCompetencyEntry[] = [];
     const bim = this.selBimestre();
     for (const key of this.pendingKeys()) {
@@ -595,6 +747,7 @@ export class CompetenciasComponent implements OnInit {
         seccion: this.selSeccion(),
         bimestre: bim,
         anio: this.anioEscolar() ?? undefined,
+        cursoId: this.modoEmbeddido() ? this.cursoInicial()?.cursoId : undefined,
         entries,
       })
       .subscribe({

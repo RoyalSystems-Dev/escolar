@@ -1,17 +1,17 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { forkJoin } from 'rxjs';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
 import { HorariosService } from '../../academico/horarios/services/horarios.service';
-import { PortalEstudianteService } from '../services/portal-estudiante.service';
-import { ClasesTemarioService } from './clases-temario.service';
+import { HijoSelectorComponent } from '../shared/hijo-selector.component';
+import { SeguimientoService } from '../seguimiento/seguimiento.service';
+import { HorariosPadreService } from '../horarios/horarios-padre.service';
+import { ClasesPadreService } from './clases-padre.service';
 import {
   estadoTemarioBadge,
   estadoTemarioLabel,
   materialTemarioLabel,
-  TemarioClaseItem,
   temarioImagenUrl,
   temarioMaterialUrl,
   tieneContenidoClase,
@@ -24,135 +24,131 @@ import {
   tipoRecursoLabel,
 } from '../../portal-docente/recursos/recursos.model';
 import { ApiResource } from '../../../core/api/api.models';
-import { ClasesEstudianteService } from './clases-estudiante.service';
-import {
-  CursoClaseEstudiante,
-  SesionClaseDetalle,
-} from './clases.model';
-import { RecursosEstudianteService } from './recursos-estudiante.service';
+import { ClasesEstudianteService } from '../../portal-estudiante/clases/clases-estudiante.service';
+import { CursoClaseEstudiante, SesionClaseDetalle } from '../../portal-estudiante/clases/clases.model';
+import { HijoResumen } from '../seguimiento/seguimiento.model';
 
 @Component({
   standalone: true,
-  imports: [NgClass, OverlayPortalDirective],
+  imports: [NgClass, OverlayPortalDirective, HijoSelectorComponent],
   template: `
     <div class="space-y-5 animate-fade-in">
-      @if (!cursoSeleccionado()) {
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-900">Mis Clases</h2>
-            <p class="text-sm text-gray-400 mt-0.5">
-              {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · Selecciona un curso para ver el temario
-            </p>
-          </div>
-          <button class="btn btn-secondary btn-sm" (click)="cargarCursos()" [disabled]="loadingCursos()">
-            <span class="icon icon-sm">refresh</span> Actualizar
-          </button>
-        </div>
+      <app-hijo-selector [autoLoad]="false" (hijoChange)="onHijoChange($event)" />
 
-        @if (error()) {
-          <div class="card p-4 border-red-200 bg-red-50 text-red-700 text-sm">{{ error() }}</div>
-        }
-
-        @if (loadingCursos() || horarios.loading()) {
-          <div class="card p-12 text-center text-gray-400 text-sm">Cargando tus cursos…</div>
-        } @else if (!cursos().length) {
-          <div class="card p-16 text-center">
-            <span class="text-4xl mb-4 block">📚</span>
-            <h3 class="text-lg font-semibold text-gray-700">Sin cursos asignados</h3>
-            <p class="text-sm text-gray-500 mt-1">Aún no hay cursos en tu horario escolar.</p>
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            @for (c of cursos(); track c.id) {
-              <button type="button"
-                class="card overflow-hidden p-0 text-left hover:shadow-md hover:border-indigo-200 border border-transparent transition-all group flex"
-                (click)="seleccionarCurso(c)">
-                <div class="w-24 sm:w-28 shrink-0 flex items-center justify-center min-h-[5.5rem] border-r border-gray-100"
-                  [ngClass]="c.colorClass">
-                  <span class="text-xl sm:text-2xl font-bold">{{ c.iniciales }}</span>
-                </div>
-                <div class="flex-1 min-w-0 p-3 flex flex-col justify-between gap-2">
-                  <div>
-                    <h3 class="font-bold text-gray-900 text-sm truncate">{{ c.nombre }}</h3>
-                    <p class="text-xs text-gray-500 mt-0.5 truncate">{{ c.area }} · {{ c.docenteAbrev }}</p>
-                  </div>
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex flex-wrap gap-1">
-                      <span class="badge badge-indigo text-[10px]">{{ c.sesionesSemana }}/sem</span>
-                      <span class="badge badge-gray text-[10px]">{{ c.diasSemana.length }} días</span>
-                    </div>
-                    <span class="icon text-gray-300 shrink-0 text-lg group-hover:text-indigo-400 transition-colors">chevron_right</span>
-                  </div>
-                </div>
-              </button>
-            }
-          </div>
-        }
-      } @else {
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-          <button type="button" class="btn btn-ghost btn-sm self-start" (click)="volver()">
-            <span class="icon icon-sm">arrow_back</span> Mis clases
-          </button>
-          <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="w-3 h-3 rounded-full" [ngClass]="cursoSeleccionado()!.dotClass"></span>
-              <h2 class="text-2xl font-bold text-gray-900">{{ cursoSeleccionado()!.nombre }}</h2>
+      @if (hijosSvc.hijoSeleccionado(); as hijo) {
+        @if (!cursoSeleccionado()) {
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Clases de {{ hijo.nombreCompleto }}</h2>
+              <p class="text-sm text-gray-400 mt-0.5">
+                {{ auth.nombreCompleto() }} · {{ perfil()?.aulaLabel ?? hijo.aulaLabel }} · Selecciona un curso
+              </p>
             </div>
-            <p class="text-sm text-gray-500 mt-0.5">
-              {{ cursoSeleccionado()!.area }} · Prof. {{ cursoSeleccionado()!.docenteNombre }}
-            </p>
+            <button class="btn btn-secondary btn-sm" (click)="cargarCursos()" [disabled]="loadingCursos()">
+              <span class="icon icon-sm">refresh</span> Actualizar
+            </button>
           </div>
-          <button class="btn btn-secondary btn-sm" (click)="recargarCurso()" [disabled]="loadingCurso()">
-            <span class="icon icon-sm">refresh</span> Actualizar
-          </button>
-        </div>
 
-        @if (errorCurso()) {
-          <div class="card p-4 border-red-200 bg-red-50 text-red-700 text-sm">{{ errorCurso() }}</div>
-        }
+          @if (error()) {
+            <div class="card p-4 border-red-200 bg-red-50 text-red-700 text-sm">{{ error() }}</div>
+          }
 
-        @if (loadingCurso()) {
-          <div class="card p-12 text-center text-gray-400 text-sm">Cargando temario del curso…</div>
-        } @else if (!sesiones().length) {
-          <div class="card p-10 text-center text-gray-500 text-sm">
-            Tu docente aún no ha publicado clases para este curso.
-          </div>
-        } @else {
-          <p class="text-sm text-gray-500">{{ sesiones().length }} clase(s) en orden cronológico. Toca una para ver el contenido.</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            @for (ses of sesiones(); track ses.fechaClase) {
-              <button type="button"
-                class="card overflow-hidden flex text-left transition-all group"
-                [ngClass]="sesionPanel()?.fechaClase === ses.fechaClase
-                  ? 'ring-2 ring-indigo-400 border-indigo-200 shadow-md'
-                  : 'hover:shadow-md hover:border-indigo-200 border border-transparent'"
-                (click)="abrirPanelSesion(ses)">
-                <div class="w-24 sm:w-28 shrink-0 flex items-center justify-center min-h-[6.5rem] border-r border-gray-100"
-                  [ngClass]="cursoSeleccionado()!.colorClass">
-                  <span class="text-xl sm:text-2xl font-bold">{{ cursoSeleccionado()!.iniciales }}</span>
-                </div>
-                <div class="flex-1 min-w-0 p-3 flex flex-col justify-between gap-2">
-                  <div>
-                    <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-xs mb-1.5">
-                      {{ ses.orden }}
-                    </span>
-                    <div class="font-semibold text-gray-900 text-sm leading-snug">{{ ses.fechaClaseDisplay }}</div>
-                    <div class="text-xs text-gray-500 mt-0.5">
-                      {{ ses.temas.length }} tema(s)
-                      @if (ses.recursos.length) { · {{ ses.recursos.length }} recurso(s) }
+          @if (loadingCursos() || horariosPadre.loadingHorario() || horarios.loading()) {
+            <div class="card p-12 text-center text-gray-400 text-sm">Cargando cursos…</div>
+          } @else if (!cursos().length) {
+            <div class="card p-16 text-center">
+              <span class="text-4xl mb-4 block">📚</span>
+              <h3 class="text-lg font-semibold text-gray-700">Sin cursos asignados</h3>
+              <p class="text-sm text-gray-500 mt-1">Aún no hay cursos en el horario de este alumno.</p>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              @for (c of cursos(); track c.id) {
+                <button type="button"
+                  class="card overflow-hidden p-0 text-left hover:shadow-md hover:border-indigo-200 border border-transparent transition-all group flex"
+                  (click)="seleccionarCurso(c)">
+                  <div class="w-24 sm:w-28 shrink-0 flex items-center justify-center min-h-[5.5rem] border-r border-gray-100"
+                    [ngClass]="c.colorClass">
+                    <span class="text-xl sm:text-2xl font-bold">{{ c.iniciales }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0 p-3 flex flex-col justify-between gap-2">
+                    <div>
+                      <h3 class="font-bold text-gray-900 text-sm truncate">{{ c.nombre }}</h3>
+                      <p class="text-xs text-gray-500 mt-0.5 truncate">{{ c.area }} · {{ c.docenteAbrev }}</p>
                     </div>
-                    <div class="mt-1 space-y-0.5">
-                      @for (t of ses.temas; track t.id) {
-                        <p class="text-xs text-gray-400 line-clamp-1">{{ $index + 1 }}. {{ t.titulo }}</p>
-                      }
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex flex-wrap gap-1">
+                        <span class="badge badge-indigo text-[10px]">{{ c.sesionesSemana }}/sem</span>
+                        <span class="badge badge-gray text-[10px]">{{ c.diasSemana.length }} días</span>
+                      </div>
+                      <span class="icon text-gray-300 shrink-0 text-lg group-hover:text-indigo-400 transition-colors">chevron_right</span>
                     </div>
                   </div>
-                  <span class="icon text-gray-300 text-lg self-end group-hover:text-indigo-400 transition-colors">chevron_right</span>
-                </div>
-              </button>
-            }
+                </button>
+              }
+            </div>
+          }
+        } @else {
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button type="button" class="btn btn-ghost btn-sm self-start" (click)="volver()">
+              <span class="icon icon-sm">arrow_back</span> Cursos de {{ hijo.nombreCompleto }}
+            </button>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-3 h-3 rounded-full" [ngClass]="cursoSeleccionado()!.dotClass"></span>
+                <h2 class="text-2xl font-bold text-gray-900">{{ cursoSeleccionado()!.nombre }}</h2>
+              </div>
+              <p class="text-sm text-gray-500 mt-0.5">
+                {{ cursoSeleccionado()!.area }} · Prof. {{ cursoSeleccionado()!.docenteNombre }}
+              </p>
+            </div>
+            <button class="btn btn-secondary btn-sm" (click)="recargarCurso()" [disabled]="loadingCurso()">
+              <span class="icon icon-sm">refresh</span> Actualizar
+            </button>
           </div>
+
+          @if (errorCurso()) {
+            <div class="card p-4 border-red-200 bg-red-50 text-red-700 text-sm">{{ errorCurso() }}</div>
+          }
+
+          @if (loadingCurso()) {
+            <div class="card p-12 text-center text-gray-400 text-sm">Cargando temario del curso…</div>
+          } @else if (!sesiones().length) {
+            <div class="card p-10 text-center text-gray-500 text-sm">
+              El docente aún no ha publicado clases para este curso.
+            </div>
+          } @else {
+            <p class="text-sm text-gray-500">{{ sesiones().length }} clase(s) en orden cronológico. Toca una para ver el contenido.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              @for (ses of sesiones(); track ses.fechaClase) {
+                <button type="button"
+                  class="card overflow-hidden flex text-left transition-all group"
+                  [ngClass]="sesionPanel()?.fechaClase === ses.fechaClase
+                    ? 'ring-2 ring-indigo-400 border-indigo-200 shadow-md'
+                    : 'hover:shadow-md hover:border-indigo-200 border border-transparent'"
+                  (click)="abrirPanelSesion(ses)">
+                  <div class="w-24 sm:w-28 shrink-0 flex items-center justify-center min-h-[6.5rem] border-r border-gray-100"
+                    [ngClass]="cursoSeleccionado()!.colorClass">
+                    <span class="text-xl sm:text-2xl font-bold">{{ cursoSeleccionado()!.iniciales }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0 p-3 flex flex-col justify-between gap-2">
+                    <div>
+                      <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1.5 rounded-md bg-indigo-100 text-indigo-800 font-bold text-xs mb-1.5">
+                        {{ ses.orden }}
+                      </span>
+                      <div class="font-semibold text-gray-900 text-sm leading-snug">{{ ses.fechaClaseDisplay }}</div>
+                      <div class="text-xs text-gray-500 mt-0.5">
+                        {{ ses.temas.length }} tema(s)
+                        @if (ses.recursos.length) { · {{ ses.recursos.length }} recurso(s) }
+                      </div>
+                    </div>
+                    <span class="icon text-gray-300 text-lg self-end group-hover:text-indigo-400 transition-colors">chevron_right</span>
+                  </div>
+                </button>
+              }
+            </div>
+          }
         }
       }
     </div>
@@ -282,34 +278,38 @@ import { RecursosEstudianteService } from './recursos-estudiante.service';
     }
   `,
 })
-export class ClasesEstudianteComponent implements OnInit {
+export class ClasesPadreComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   readonly auth = inject(AuthService);
+  readonly hijosSvc = inject(SeguimientoService);
+  readonly horariosPadre = inject(HorariosPadreService);
   readonly horarios = inject(HorariosService);
-  readonly portal = inject(PortalEstudianteService);
-  readonly temarioSvc = inject(ClasesTemarioService);
-  readonly recursosSvc = inject(RecursosEstudianteService);
+  readonly clasesPadreSvc = inject(ClasesPadreService);
   readonly clasesSvc = inject(ClasesEstudianteService);
 
-  private readonly _temario = signal<TemarioClaseItem[]>([]);
-  private readonly _recursos = signal<ApiResource[]>([]);
-  private readonly _loadingCursos = signal(false);
-  private readonly _loadingCurso = signal(false);
   readonly error = signal('');
   readonly errorCurso = signal('');
   readonly cursoSeleccionado = signal<CursoClaseEstudiante | null>(null);
   readonly sesionPanel = signal<SesionClaseDetalle | null>(null);
+  private readonly _loadingCursos = signal(false);
 
   readonly loadingCursos = this._loadingCursos.asReadonly();
-  readonly loadingCurso = computed(
-    () => this._loadingCurso() || this.temarioSvc.loading() || this.recursosSvc.loading(),
-  );
-  readonly perfil = computed(() => this.horarios.getPerfilEstudiante());
+  readonly loadingCurso = computed(() => this._loadingCurso() || this.clasesPadreSvc.loading());
+  private readonly _loadingCurso = signal(false);
+
+  readonly perfil = computed(() => {
+    try {
+      return this.horarios.getPerfilEstudiante();
+    } catch {
+      return null;
+    }
+  });
+
   readonly cursos = computed(() => this.clasesSvc.buildCursosAsignados());
 
   readonly sesiones = computed((): SesionClaseDetalle[] => {
     if (!this.cursoSeleccionado()) return [];
-    return this.clasesSvc.buildSesionesPorCurso(this._temario(), this._recursos());
+    return this.clasesSvc.buildSesionesPorCurso(this.clasesPadreSvc.temario(), this.clasesPadreSvc.recursos());
   });
 
   readonly estadoBadge = estadoTemarioBadge;
@@ -325,39 +325,25 @@ export class ClasesEstudianteComponent implements OnInit {
 
   ngOnInit(): void {
     this.layout.setTitle('Clases');
-    this.cargarCursos();
+    this.hijosSvc.loadHijos().subscribe(hijos => {
+      const hijo = this.hijosSvc.hijoSeleccionado() ?? hijos[0];
+      if (hijo) this.cargarHijo(hijo);
+    });
+  }
+
+  onHijoChange(hijo: HijoResumen): void {
+    this.cargarHijo(hijo);
   }
 
   cargarCursos(): void {
-    this.error.set('');
-    this._loadingCursos.set(true);
-
-    const iniciar = () => {
-      if (!this.horarios.entradas().length && !this.horarios.loading()) {
-        this.horarios.load();
-      }
-      const esperar = () => {
-        if (this.horarios.loading()) {
-          globalThis.setTimeout(esperar, 150);
-          return;
-        }
-        this._loadingCursos.set(false);
-      };
-      esperar();
-    };
-
-    if (this.auth.hasRole('ESTUDIANTE')) {
-      this.portal.ensureLoaded().subscribe(() => iniciar());
-    } else {
-      iniciar();
-    }
+    const hijo = this.hijosSvc.hijoSeleccionado();
+    if (hijo) this.cargarHijo(hijo);
   }
 
   seleccionarCurso(curso: CursoClaseEstudiante): void {
     this.cursoSeleccionado.set(curso);
     this.cerrarPanelSesion();
-    this._temario.set([]);
-    this._recursos.set([]);
+    this.clasesPadreSvc.clear();
     this.cargarContenidoCurso(curso);
   }
 
@@ -369,41 +355,8 @@ export class ClasesEstudianteComponent implements OnInit {
   volver(): void {
     this.cursoSeleccionado.set(null);
     this.cerrarPanelSesion();
-    this._temario.set([]);
-    this._recursos.set([]);
+    this.clasesPadreSvc.clear();
     this.errorCurso.set('');
-  }
-
-  private cargarContenidoCurso(curso: CursoClaseEstudiante): void {
-    this.errorCurso.set('');
-    this._loadingCurso.set(true);
-    const p = this.perfil();
-
-    forkJoin({
-      temario: this.temarioSvc.listByCurso({
-        curso: curso.nombre,
-        nivel: p.nivel,
-        grado: p.grado,
-        seccion: p.seccion,
-        anioEscolar: new Date().getFullYear(),
-      }),
-      recursos: this.recursosSvc.load({
-        nivel: p.nivel,
-        grado: p.grado,
-        seccion: p.seccion,
-        curso: curso.nombre,
-      }),
-    }).subscribe({
-      next: ({ temario, recursos }) => {
-        this._temario.set(temario);
-        this._recursos.set(recursos);
-        this._loadingCurso.set(false);
-      },
-      error: () => {
-        this.errorCurso.set('No se pudo cargar el temario de este curso');
-        this._loadingCurso.set(false);
-      },
-    });
   }
 
   abrirPanelSesion(ses: SesionClaseDetalle): void {
@@ -418,5 +371,38 @@ export class ClasesEstudianteComponent implements OnInit {
     if (r.url?.startsWith('http')) return r.url;
     if (r.url) return resourceFileUrl(r.url);
     return null;
+  }
+
+  private cargarHijo(hijo: HijoResumen): void {
+    this.hijosSvc.seleccionarHijo(hijo);
+    this.volver();
+    this.error.set('');
+    this._loadingCursos.set(true);
+
+    this.horariosPadre.loadHorario(hijo.studentId).subscribe({
+      next: () => this._loadingCursos.set(false),
+      error: () => {
+        this.error.set('No se pudo cargar el horario del alumno');
+        this._loadingCursos.set(false);
+      },
+    });
+  }
+
+  private cargarContenidoCurso(curso: CursoClaseEstudiante): void {
+    const hijo = this.hijosSvc.hijoSeleccionado();
+    if (!hijo) return;
+
+    this.errorCurso.set('');
+    this._loadingCurso.set(true);
+
+    this.clasesPadreSvc
+      .loadCurso(hijo.studentId, curso.nombre, this.horariosPadre.anioEscolar())
+      .subscribe({
+        next: () => this._loadingCurso.set(false),
+        error: () => {
+          this.errorCurso.set('No se pudo cargar el temario de este curso');
+          this._loadingCurso.set(false);
+        },
+      });
   }
 }

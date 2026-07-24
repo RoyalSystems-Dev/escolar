@@ -46,6 +46,19 @@ export interface RecursoPayload {
   visible: boolean;
 }
 
+export interface RecursoUpdatePayload {
+  titulo: string;
+  descripcion: string;
+  tipo: RecursoTipo;
+  fechaPublicacion: string;
+  fechaEntrega?: string;
+  url?: string;
+  nombreArchivo?: string;
+  mimeType?: string;
+  tamanoBytes?: number;
+  visible: boolean;
+}
+
 export interface RecursoUploadResponse {
   url: string;
   nombreArchivo: string;
@@ -103,17 +116,104 @@ export function tipoUsaUrl(tipo: RecursoTipo): boolean {
 
 export function acceptForTipo(tipo: RecursoTipo): string {
   const map: Record<string, string> = {
-    imagen: 'image/jpeg,image/png,image/webp,image/gif',
+    imagen:
+      'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/svg+xml,.jpg,.jpeg,.png,.webp,.gif,.bmp,.svg',
     documento: '.pdf,.doc,.docx,.txt,application/pdf',
     excel: '.xls,.xlsx,.csv',
     ppt: '.ppt,.pptx',
     video: 'video/mp4,video/webm,.mp4,.webm',
     clase: '.pdf,.doc,.docx',
     lectura: '.pdf,.txt',
-    tarea: '.pdf,.doc,.docx,.xls,.xlsx',
-    evaluacion: '.pdf,.doc,.docx',
+    tarea: '.pdf,.doc,.docx,.xls,.xlsx,application/pdf',
+    evaluacion: '.pdf,.doc,.docx,application/pdf',
   };
   return map[tipo] ?? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*,video/*';
+}
+
+const EXTENSION_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  txt: 'text/plain',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  bmp: 'image/bmp',
+  svg: 'image/svg+xml',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+};
+
+export function mimeFromFileName(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return EXTENSION_MIME[ext] ?? '';
+}
+
+export function validateFileForTipo(
+  file: File,
+  tipo: RecursoTipo,
+): { ok: true } | { ok: false; message: string } {
+  const maxBytes = 10 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    return { ok: false, message: 'El archivo supera el límite de 10 MB.' };
+  }
+
+  const inferred = (() => {
+    const reported = file.type?.trim() ?? '';
+    if (
+      !reported ||
+      reported === 'application/octet-stream' ||
+      reported === 'binary/octet-stream'
+    ) {
+      return mimeFromFileName(file.name) || reported;
+    }
+    return reported;
+  })();
+  const allowed = acceptForTipo(tipo)
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+
+  const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`;
+  const mimeOk =
+    allowed.some((rule) => {
+      if (rule.startsWith('.')) return ext === rule;
+      if (rule.endsWith('/*')) {
+        const prefix = rule.slice(0, -1);
+        return inferred.startsWith(prefix);
+      }
+      return inferred === rule;
+    }) || !!mimeFromFileName(file.name);
+
+  if (!mimeOk) {
+    return {
+      ok: false,
+      message: `Este tipo de archivo no es válido para "${tipoRecursoLabel(tipo)}".`,
+    };
+  }
+
+  return { ok: true };
+}
+
+/** Tipo de subida según el archivo (temario: material adjunto). */
+export function uploadTipoForFile(file: File, fallback = 'clase'): string {
+  if (file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(file.name)) {
+    return 'imagen';
+  }
+  if (file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name)) {
+    return 'video';
+  }
+  if (/\.(xls|xlsx|csv)$/i.test(file.name)) return 'excel';
+  if (/\.(ppt|pptx)$/i.test(file.name)) return 'ppt';
+  return fallback;
 }
 
 export function resourceFileUrl(path: string): string {
@@ -128,4 +228,10 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function coerceResourceVisible(value: unknown): boolean {
+  if (value === true || value === 1 || value === '1' || value === 'true') return true;
+  if (value === false || value === 0 || value === '0' || value === 'false') return false;
+  return !!value;
 }

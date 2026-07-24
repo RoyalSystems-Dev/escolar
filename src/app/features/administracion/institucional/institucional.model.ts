@@ -70,6 +70,7 @@ export interface InstitucionData {
   sistemaEval: string;
   tipoPeriodo: string;
   notaMinima: number;
+  escalaLogro?: { AD: number; A: number; B: number };
 }
 
 export interface ConfigSistema {
@@ -89,6 +90,7 @@ export interface ModuloSistema {
 export interface InstitutionConfigResponse {
   institution: InstitucionData & {
     id: number;
+    escalaLogro?: { AD: number; A: number; B: number };
     niveles: Nivel[];
     periodos: Periodo[];
     config: ConfigSistema;

@@ -3,8 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
 import { InstitucionalService } from './institucional.service';
-import { Nivel, Periodo, Sede, ConfigSistema, ModuloSistema, InstitucionData, Grado } from './institucional.model';
+import { Nivel, Periodo, Sede, ConfigSistema, ModuloSistema, InstitucionData, Grado, InstitutionConfigResponse } from './institucional.model';
 
 @Component({
   selector: 'app-institucional',
@@ -176,9 +177,12 @@ import { Nivel, Periodo, Sede, ConfigSistema, ModuloSistema, InstitucionData, Gr
                 <label class="form-label">Sistema de Evaluacion</label>
                 <select class="form-select" [(ngModel)]="inst.sistemaEval">
                   <option value="numerico">Numerico (0-20)</option>
-                  <option value="literal">Literal (AD/A/B/C)</option>
-                  <option value="mixto">Mixto</option>
+                  <option value="literal">Por competencias (AD/A/B/C)</option>
+                  <option value="mixto">Mixto (numeros y competencias)</option>
                 </select>
+                <p class="text-xs text-gray-400 mt-1">
+                  Define si el colegio califica con notas numericas, niveles de logro o ambos.
+                </p>
               </div>
               <div class="form-group">
                 <label class="form-label">Estructura de Periodos</label>
@@ -193,6 +197,26 @@ import { Nivel, Periodo, Sede, ConfigSistema, ModuloSistema, InstitucionData, Gr
                 <input class="form-input" type="number" [(ngModel)]="inst.notaMinima" min="1" max="20" placeholder="11">
               </div>
             </div>
+            @if (inst.sistemaEval !== 'numerico') {
+              <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-sm font-medium text-gray-700 mb-3">Umbrales escala de logro (nota minima por nivel)</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="form-group">
+                    <label class="form-label">AD — Logro destacado</label>
+                    <input class="form-input" type="number" [(ngModel)]="inst.escalaLogro!.AD" min="1" max="20" step="0.5">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">A — Logro esperado</label>
+                    <input class="form-input" type="number" [(ngModel)]="inst.escalaLogro!.A" min="1" max="20" step="0.5">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">B — En proceso</label>
+                    <input class="form-input" type="number" [(ngModel)]="inst.escalaLogro!.B" min="1" max="20" step="0.5">
+                  </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Por debajo de B se considera nivel C (inicio).</p>
+              </div>
+            }
           </div>
         </fieldset>
       }
@@ -573,12 +597,18 @@ import { Nivel, Periodo, Sede, ConfigSistema, ModuloSistema, InstitucionData, Gr
           <span class="icon">check_circle</span> Cambios guardados correctamente
         </div>
       }
+      @if (errorGuardado()) {
+        <div class="fixed bottom-5 right-5 bg-red-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in z-50 max-w-md">
+          <span class="icon">error</span> {{ errorGuardado() }}
+        </div>
+      }
     </div>
   `
 })
 export class InstitucionalComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   readonly svc = inject(InstitucionalService);
+  private readonly gradingConfig = inject(GradingConfigService);
 
   tabActivo = signal('general');
   modoEdicion = signal(false);
@@ -588,6 +618,7 @@ export class InstitucionalComponent implements OnInit {
   sedeSeleccionada = signal<Sede | null>(null);
   nivelGradoSeleccionado = signal<Nivel | null>(null);
   guardado = signal(false);
+  errorGuardado = signal('');
 
   tabs = [
     { id: 'general',  label: 'Datos Generales',    icon: 'domain'     },
@@ -612,6 +643,7 @@ export class InstitucionalComponent implements OnInit {
     director: 'Juan Carlos Perez Torres', subdirector: 'Maria Elena Quispe Huanca',
     administrador: 'Carlos Mamani Flores',
     anio: '2025', sistemaEval: 'numerico', tipoPeriodo: 'bimestre', notaMinima: 11,
+    escalaLogro: { AD: 17.5, A: 14, B: 11 },
   };
 
   private readonly _sedes = signal<Sede[]>([
@@ -668,36 +700,7 @@ export class InstitucionalComponent implements OnInit {
     }).subscribe(({ config, niveles }) => {
       if (config?.institution) {
         const { institution, campuses } = config;
-        this.inst = {
-          nombre: institution.nombre,
-          siglas: institution.siglas,
-          ruc: institution.ruc,
-          codigoModular: institution.codigoModular,
-          tipoGestion: institution.tipoGestion,
-          ugel: institution.ugel,
-          dre: institution.dre,
-          resolucion: institution.resolucion,
-          direccion: institution.direccion,
-          distrito: institution.distrito,
-          provincia: institution.provincia,
-          region: institution.region,
-          codigoPostal: institution.codigoPostal,
-          telefono: institution.telefono,
-          telefono2: institution.telefono2,
-          email: institution.email,
-          web: institution.web,
-          facebook: institution.facebook,
-          director: institution.director,
-          subdirector: institution.subdirector,
-          administrador: institution.administrador,
-          anio: institution.anio,
-          sistemaEval: institution.sistemaEval,
-          tipoPeriodo: institution.tipoPeriodo,
-          notaMinima: Number(institution.notaMinima ?? 11),
-        };
-        if (institution.periodos?.length) this.periodos = institution.periodos;
-        if (institution.config) this.config = { ...this.config, ...institution.config };
-        if (institution.modulos?.length) this.modulos = institution.modulos;
+        this.aplicarInstitucion(institution);
         if (campuses.length) this._sedes.set(campuses);
       }
 
@@ -938,18 +941,66 @@ export class InstitucionalComponent implements OnInit {
   }
 
   guardar(): void {
+    this.errorGuardado.set('');
     this.svc.save({
       inst: this.inst,
       periodos: this.periodos,
       config: this.config,
       modulos: this.modulos,
     }).subscribe({
-      next: () => {
+      next: (saved) => {
+        if (saved) {
+          this.aplicarInstitucion(saved);
+        }
         this.modoEdicion.set(false);
         this.snapshot = null;
         this.guardado.set(true);
+        this.gradingConfig.load().subscribe();
         setTimeout(() => this.guardado.set(false), 3000);
       },
+      error: (err) => {
+        const msg = err?.userMessage
+          ?? (Array.isArray(err?.error?.message) ? err.error.message.join(', ') : err?.error?.message)
+          ?? 'No se pudo guardar la configuración. Verifique que el backend esté actualizado.';
+        this.errorGuardado.set(msg);
+        setTimeout(() => this.errorGuardado.set(''), 6000);
+      },
     });
+  }
+
+  private aplicarInstitucion(
+    institution: InstitutionConfigResponse['institution'],
+  ): void {
+    this.inst = {
+      nombre: institution.nombre,
+      siglas: institution.siglas,
+      ruc: institution.ruc,
+      codigoModular: institution.codigoModular,
+      tipoGestion: institution.tipoGestion,
+      ugel: institution.ugel,
+      dre: institution.dre,
+      resolucion: institution.resolucion,
+      direccion: institution.direccion,
+      distrito: institution.distrito,
+      provincia: institution.provincia,
+      region: institution.region,
+      codigoPostal: institution.codigoPostal,
+      telefono: institution.telefono,
+      telefono2: institution.telefono2,
+      email: institution.email,
+      web: institution.web,
+      facebook: institution.facebook,
+      director: institution.director,
+      subdirector: institution.subdirector,
+      administrador: institution.administrador,
+      anio: institution.anio,
+      sistemaEval: institution.sistemaEval,
+      tipoPeriodo: institution.tipoPeriodo,
+      notaMinima: Number(institution.notaMinima ?? 11),
+      escalaLogro: institution.escalaLogro ?? { AD: 17.5, A: 14, B: 11 },
+    };
+    if (institution.periodos?.length) this.periodos = institution.periodos;
+    if (institution.config) this.config = { ...this.config, ...institution.config };
+    if (institution.modulos?.length) this.modulos = institution.modulos;
   }
 }

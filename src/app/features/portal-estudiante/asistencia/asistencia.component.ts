@@ -1,4 +1,4 @@
-﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LayoutService } from '../../../core/layout/services/layout.service';
@@ -15,7 +15,7 @@ import { EstadoAsistencia } from '../../asistencia/models/asistencia-estudiante.
         <div>
           <h2 class="text-xl font-bold text-gray-800">Mi Asistencia</h2>
           <p class="text-sm text-gray-500 mt-0.5">
-            {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · {{ mesSeleccionadoLabel() }}
+            {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · Año {{ svc.anioActual }} · {{ mesSeleccionadoLabel() }}
           </p>
         </div>
         <div class="flex gap-3">
@@ -25,7 +25,6 @@ import { EstadoAsistencia } from '../../asistencia/models/asistencia-estudiante.
               class="form-input"
               [ngModel]="filtroMes()"
               (ngModelChange)="filtroMes.set($event)">
-              <option value="TODOS">Todos</option>
               @for (mes of mesesDisponibles(); track mes) {
                 <option [value]="mes">{{ svc.formatMes(mes) }}</option>
               }
@@ -137,7 +136,7 @@ export class AsistenciaEstudianteComponent implements OnInit {
     this.svc.obtenerMesesDisponibles(this.registros()),
   );
 
-  readonly filtroMes = signal<string | 'TODOS'>('TODOS');
+  readonly filtroMes = signal<string>(this.svc.mesActual());
   readonly filtroEstado = signal<EstadoAsistencia | 'TODOS'>('TODOS');
 
   readonly registrosPorMes = computed(() =>
@@ -150,15 +149,21 @@ export class AsistenciaEstudianteComponent implements OnInit {
     this.svc.filtrarRegistros(this.registrosPorMes(), this.filtroEstado()),
   );
 
-  readonly mesSeleccionadoLabel = computed(() => {
-    const mes = this.filtroMes();
-    return mes === 'TODOS' ? 'Todos los meses' : this.svc.formatMes(mes);
+  readonly mesSeleccionadoLabel = computed(() => this.svc.formatMes(this.filtroMes()));
+
+  private readonly syncFiltroMes = effect(() => {
+    const meses = this.mesesDisponibles();
+    if (!meses.length) return;
+    const mesActual = this.svc.mesActual();
+    const seleccionado = this.filtroMes();
+    if (!meses.includes(seleccionado)) {
+      this.filtroMes.set(meses.includes(mesActual) ? mesActual : meses[0]);
+    }
   });
 
   ngOnInit(): void {
     this.layout.setTitle('Mi Asistencia');
-    const primerMes = this.mesesDisponibles()[0];
-    if (primerMes) this.filtroMes.set(primerMes);
+    this.svc.load();
   }
 }
 

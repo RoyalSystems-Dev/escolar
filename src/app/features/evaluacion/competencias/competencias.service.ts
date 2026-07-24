@@ -16,6 +16,10 @@ export class CompetenciasService {
   readonly loading = signal(false);
   readonly saving = signal(false);
 
+  loadPeriodMeta(): Observable<{ bimestreActual: number }> {
+    return this.http.get<{ bimestreActual: number }>(`${this.base}/period-meta`);
+  }
+
   loadMatrix(filters: CompetencyMatrixFilters): Observable<CompetencyMatrixResponse> {
     this.loading.set(true);
     let params = new HttpParams()
@@ -26,6 +30,7 @@ export class CompetenciasService {
 
     if (filters.anio) params = params.set('anio', filters.anio);
     if (filters.curriculumId) params = params.set('curriculumId', filters.curriculumId);
+    if (filters.cursoId) params = params.set('cursoId', filters.cursoId);
 
     return this.http.get<CompetencyMatrixResponse>(`${this.base}/matrix`, { params }).pipe(
       catchError((err) => throwError(() => err)),

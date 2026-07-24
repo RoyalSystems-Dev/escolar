@@ -101,9 +101,11 @@ export function nivelBadge(nivel: string | null): string {
   return ({ AD: 'badge-indigo', A: 'badge-green', B: 'badge-yellow', C: 'badge-red' } as Record<string, string>)[nivel ?? ''] ?? 'badge-gray';
 }
 
-export function promedioColor(nota: number | null): string {
+export function promedioColor(nota: number | null, cfg?: { notaMinima: number; escalaLogro: FormulaEscalaLogro }): string {
   if (nota === null) return 'text-gray-400';
-  if (nota >= 14) return 'text-green-600';
-  if (nota >= 11) return 'text-yellow-600';
+  const min = cfg?.notaMinima ?? 11;
+  const a = cfg?.escalaLogro?.A ?? 14;
+  if (nota >= a) return 'text-green-600';
+  if (nota >= min) return 'text-yellow-600';
   return 'text-red-600';
 }

@@ -2,12 +2,12 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { environment } from '@environments/environment';
 import { ApiAttendance } from '../../../core/api/api.models';
 import { AuthService } from '../../../core/auth/services/auth.service';
-import { HorariosService } from '../../academico/horarios/services/horarios.service';
+import { PerfilEstudiante } from '../../academico/horarios/models/horario.model';
 import { PortalEstudianteService } from '../../portal-estudiante/services/portal-estudiante.service';
 import {
   EstadoAsistencia,
@@ -19,9 +19,10 @@ import {
 export class AsistenciaEstudianteService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private readonly horarios = inject(HorariosService);
   private readonly portal = inject(PortalEstudianteService);
   private readonly base = `${environment.apiUrl}/attendances`;
+
+  readonly anioActual = new Date().getFullYear();
 
   private readonly _registros = signal<RegistroAsistenciaAlumno[]>([]);
   readonly registros = this._registros.asReadonly();
@@ -36,48 +37,56 @@ export class AsistenciaEstudianteService {
   load(): void {
     this.loading.set(true);
 
-    const perfil$ = this.auth.hasRole('ESTUDIANTE')
-      ? this.portal.ensureLoaded()
-      : of(null);
+    const request$ = this.auth.hasRole('ESTUDIANTE')
+      ? this.portal.ensureLoaded().pipe(
+          switchMap((perfil) => {
+            const studentId = perfil?.studentId;
+            if (!studentId) return of([] as ApiAttendance[]);
+            const params = new HttpParams()
+              .set('studentId', String(studentId))
+              .set('anioEscolar', String(this.anioActual));
+            return this.http.get<ApiAttendance[]>(this.base, { params });
+          }),
+        )
+      : this.http.get<ApiAttendance[]>(this.base, {
+          params: new HttpParams()
+            .set('studentId', this.getEstudianteId())
+            .set('anioEscolar', String(this.anioActual)),
+        });
 
-    perfil$.pipe(
-      switchMap(perfil => {
-        const studentId = perfil?.studentId;
-        const params = studentId
-          ? new HttpParams().set('studentId', String(studentId))
-          : undefined;
-        return this.http.get<ApiAttendance[]>(this.base, { params }).pipe(
-          map(items => ({ items, studentId })),
-        );
-      }),
-      tap(({ items, studentId }) => {
-        const id = studentId ? String(studentId) : this.getEstudianteId();
-        this._registros.set(
-          items
-            .filter(r => String(r.studentId) === id)
-            .map(r => ({
-              id: r.id,
-              estudianteId: String(r.studentId),
-              fecha: r.fecha.slice(0, 10),
-              estado: r.estado,
-              observacion: r.observacion,
-            })),
-        );
-        this.loading.set(false);
-      }),
-      catchError(() => {
-        this.loading.set(false);
-        return of([]);
-      }),
-    ).subscribe();
+    request$
+      .pipe(
+        map(items => items.map(item => this.mapRegistro(item))),
+        tap(registros => this._registros.set(registros)),
+        catchError(() => {
+          this._registros.set([]);
+          return of([]);
+        }),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe();
   }
 
   getEstudianteId(): string {
-    return this.portal.getStudentIdString() || '5';
+    return this.portal.getStudentIdString();
   }
 
-  getPerfil() {
-    return this.horarios.getPerfilEstudiante();
+  getPerfil(): PerfilEstudiante {
+    const perfil = this.portal.getPerfilOrNull();
+    if (perfil) {
+      return {
+        nivel: perfil.nivel,
+        grado: perfil.grado,
+        seccion: perfil.seccion,
+        aulaLabel: perfil.aulaLabel,
+      };
+    }
+    return {
+      nivel: 'Primaria',
+      grado: '—',
+      seccion: '—',
+      aulaLabel: '—',
+    };
   }
 
   getRegistros(): RegistroAsistenciaAlumno[] {
@@ -96,15 +105,19 @@ export class AsistenciaEstudianteService {
 
   filtrarPorMes(
     registros: RegistroAsistenciaAlumno[],
-    mes: string | 'TODOS',
+    mes: string,
   ): RegistroAsistenciaAlumno[] {
-    if (mes === 'TODOS') return registros;
     return registros.filter((r) => r.fecha.startsWith(mes));
   }
 
   obtenerMesesDisponibles(registros: RegistroAsistenciaAlumno[]): string[] {
     const meses = new Set(registros.map((r) => r.fecha.slice(0, 7)));
     return Array.from(meses).sort((a, b) => b.localeCompare(a));
+  }
+
+  mesActual(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
   calcularResumen(registros: RegistroAsistenciaAlumno[]): ResumenAsistenciaAlumno {
@@ -154,5 +167,15 @@ export class AsistenciaEstudianteService {
 
   formatMes(mesISO: string): string {
     return format(parseISO(`${mesISO}-01`), 'MMMM yyyy', { locale: es });
+  }
+
+  private mapRegistro(r: ApiAttendance): RegistroAsistenciaAlumno {
+    return {
+      id: r.id,
+      estudianteId: String(r.studentId),
+      fecha: r.fecha.slice(0, 10),
+      estado: r.estado,
+      observacion: r.observacion,
+    };
   }
 }

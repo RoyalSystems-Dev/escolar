@@ -10,12 +10,14 @@ import {
   ForgotPasswordRequest, ResetPasswordRequest, RefreshTokenRequest
 } from '../models/auth.model';
 import { environment } from '@environments/environment';
+import { GradingConfigService } from '../../grading/grading-config.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http       = inject(HttpClient);
   private readonly router     = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly gradingConfig = inject(GradingConfigService);
   private readonly API        = `${environment.apiUrl}/auth`;
 
   // ── Signals ────────────────────────────────────────────
@@ -46,6 +48,7 @@ export class AuthService {
       tap(res => {
         this._setSession(res);
         this._scheduleRefresh(res.expiresIn);
+        this.gradingConfig.load().subscribe();
         this._loading.set(false);
       }),
       catchError(err => {
@@ -66,7 +69,7 @@ export class AuthService {
     const rt = this._loadRefreshToken();
     if (!rt) { this.logout(); return throwError(() => new Error('No refresh token')); }
     return this.http.post<LoginResponse>(`${this.API}/refresh`, { refreshToken: rt } as RefreshTokenRequest).pipe(
-      tap(res => { this._setSession(res); this._scheduleRefresh(res.expiresIn); }),
+      tap(res => { this._setSession(res); this._scheduleRefresh(res.expiresIn); this.gradingConfig.load().subscribe(); }),
       catchError(err => { this.logout(); return throwError(() => err); })
     );
   }
@@ -120,7 +123,7 @@ export class AuthService {
     if (this.isAdmin() || this.hasRole('DIRECTOR')) return '/dashboard';
     if (this.hasRole('DOCENTE')) return '/portal-docente';
     if (this.hasRole('ESTUDIANTE')) return '/portal-estudiante/dashboard';
-    if (this.hasRole('PADRE')) return '/portal-padre/seguimiento';
+    if (this.hasRole('PADRE')) return '/portal-padre/inicio';
     if (this.hasRole('SECRETARIA')) return '/matricula/matriculados';
     if (this.hasRole('TESORERO')) return '/tesoreria/pagos';
     if (this.hasRole('BIBLIOTECARIO')) return '/biblioteca/catalogo';
@@ -169,6 +172,7 @@ export class AuthService {
     }
     this._token.set(null);
     this._user.set(null);
+    this.gradingConfig.reset();
     this.refreshTimer?.unsubscribe();
   }
 

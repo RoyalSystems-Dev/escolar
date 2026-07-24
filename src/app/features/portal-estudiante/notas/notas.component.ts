@@ -1,7 +1,8 @@
-﻿import { Component, inject, OnInit, signal, computed } from '@angular/core';
+﻿import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { NgClass, DecimalPipe } from '@angular/common';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
 import { NotasEstudianteService } from '../../evaluacion/notas/services/notas-estudiante.service';
 import { CursoNotasEstudiante, NotaItem } from '../../evaluacion/notas/models/nota.model';
 
@@ -16,10 +17,15 @@ import { CursoNotasEstudiante, NotaItem } from '../../evaluacion/notas/models/no
     <div>
       <h2 class="text-xl font-bold text-gray-800">Mis Notas</h2>
       <p class="text-sm text-gray-500 mt-0.5">
-        {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · A.E. 2026
+        {{ auth.nombreCompleto() }} · {{ perfil().aulaLabel }} · A.E. {{ svc.anioEscolar }}
       </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      @if (svc.bimestreActual()) {
+        <span class="text-xs text-gray-400 hidden sm:inline">
+          Periodo actual: {{ svc.bimestreActual() }}° bimestre
+        </span>
+      }
       <span class="text-xs text-gray-500 mr-1">Bimestre:</span>
       <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
         <button
@@ -30,9 +36,15 @@ import { CursoNotasEstudiante, NotaItem } from '../../evaluacion/notas/models/no
         </button>
         @for (b of [1, 2, 3, 4]; track b) {
           <button
-            class="px-3 py-1.5 text-sm font-medium rounded-md transition-all w-9"
-            [ngClass]="bimestreFiltro() === b ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-            (click)="bimestreFiltro.set(b)">
+            class="px-3 py-1.5 text-sm font-medium rounded-md transition-all w-9 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-400"
+            [disabled]="!svc.bimestrePermitido(b)"
+            [title]="svc.bimestrePermitido(b) ? '' : 'Bimestre aún no habilitado'"
+            [ngClass]="!svc.bimestrePermitido(b)
+              ? 'text-gray-300'
+              : bimestreFiltro() === b
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'"
+            (click)="seleccionarBimestre(b)">
             {{ b }}
           </button>
         }
@@ -208,7 +220,7 @@ import { CursoNotasEstudiante, NotaItem } from '../../evaluacion/notas/models/no
   <div class="card p-3">
     <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Escala de calificación vigente</div>
     <div class="flex flex-wrap gap-2">
-      @for (n of nivelesLeyenda; track n.codigo) {
+      @for (n of nivelesLeyenda(); track n.codigo) {
         <div class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border" [ngClass]="n.colorClass">
           <span class="font-bold">{{ n.codigo }}</span>
           {{ n.label }}
@@ -225,16 +237,23 @@ export class NotasEstudianteComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   readonly auth = inject(AuthService);
   readonly svc = inject(NotasEstudianteService);
+  readonly grading = inject(GradingConfigService);
 
-  readonly nivelesLeyenda = [
-    { codigo: 'AD', label: 'Logro Destacado', rango: '17.5–20', colorClass: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-    { codigo: 'A', label: 'Logro Esperado', rango: '14–17', colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    { codigo: 'B', label: 'En Proceso', rango: '11–13', colorClass: 'bg-amber-100 text-amber-800 border-amber-200' },
-    { codigo: 'C', label: 'En Inicio', rango: '0–10', colorClass: 'bg-red-100 text-red-800 border-red-200' },
-  ];
+  readonly nivelesLeyenda = computed(() => {
+    const e = this.grading.escala();
+    const max = this.grading.notaMaxima();
+    const min = this.grading.notaMinima();
+    return [
+      { codigo: 'AD', label: 'Logro Destacado', rango: `${e.AD}–${max}`, colorClass: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+      { codigo: 'A', label: 'Logro Esperado', rango: `${e.A}–${(e.AD - 0.1).toFixed(1)}`, colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+      { codigo: 'B', label: 'En Proceso', rango: `${e.B}–${(e.A - 0.1).toFixed(1)}`, colorClass: 'bg-amber-100 text-amber-800 border-amber-200' },
+      { codigo: 'C', label: 'En Inicio', rango: `0–${(e.B - 0.1).toFixed(1)}`, colorClass: 'bg-red-100 text-red-800 border-red-200' },
+    ];
+  });
 
-  bimestreFiltro = signal<number | null>(2);
+  bimestreFiltro = signal<number | null>(null);
   cursoExpandido = signal<number | null>(null);
+  private filtroInicializado = false;
 
   perfil = computed(() => this.svc.getPerfil());
   cursos = this.svc.cursos;
@@ -245,10 +264,32 @@ export class NotasEstudianteComponent implements OnInit {
 
   nivelGeneral = computed(() => this.svc.nivelDesdeNota(this.promedioGeneral()));
 
+  private readonly syncDesdeServicio = effect(() => {
+    const actual = this.svc.bimestreActual();
+    const cursos = this.svc.cursos();
+    if (this.svc.loading()) return;
+
+    const filtro = this.bimestreFiltro();
+    if (filtro !== null && filtro > actual) {
+      this.bimestreFiltro.set(actual);
+    } else if (!this.filtroInicializado && actual > 0) {
+      this.bimestreFiltro.set(actual);
+      this.filtroInicializado = true;
+    }
+
+    if (cursos.length && this.cursoExpandido() === null) {
+      this.cursoExpandido.set(cursos[0].id);
+    }
+  });
+
   ngOnInit(): void {
     this.layout.setTitle('Mis Notas');
-    const primero = this.cursos()[0];
-    if (primero) this.cursoExpandido.set(primero.id);
+    this.svc.load();
+  }
+
+  seleccionarBimestre(bimestre: number): void {
+    if (!this.svc.bimestrePermitido(bimestre)) return;
+    this.bimestreFiltro.set(bimestre);
   }
 
   filtrar(items: NotaItem[]): NotaItem[] {

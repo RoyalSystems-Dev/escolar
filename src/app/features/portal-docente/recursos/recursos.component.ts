@@ -13,10 +13,12 @@ import { mapPortalCursoToDocente } from '../portal-docente.model';
 import { RecursosService } from './recursos.service';
 import {
   acceptForTipo,
+  coerceResourceVisible,
   CursoDocente,
   formatBytes,
   RecursoItem,
   RecursoPayload,
+  RecursoUpdatePayload,
   RecursoTipo,
   resourceFileUrl,
   TIPOS_MODAL,
@@ -26,6 +28,8 @@ import {
   tipoRecursoLabel,
   tipoUsaArchivo,
   tipoUsaUrl,
+  validateFileForTipo,
+  mimeFromFileName,
 } from './recursos.model';
 
 @Component({
@@ -215,7 +219,10 @@ import {
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <button type="button" class="btn btn-secondary btn-sm" (click)="toggleVisible(r)">
+                <button type="button" class="btn btn-secondary btn-sm"
+                  [disabled]="svc.saving() && togglingId() === r.id"
+                  [title]="r.visible ? 'Ocultar para alumnos' : 'Mostrar a alumnos'"
+                  (click)="toggleVisible(r)">
                   <span class="icon icon-sm">{{ r.visible ? 'visibility' : 'visibility_off' }}</span>
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" (click)="abrirModal(r)">
@@ -309,8 +316,14 @@ import {
 
         @if (usaArchivo()) {
           <div>
-            <label class="form-label">{{ mTipo() === 'video' ? 'O sube un archivo de video' : 'Archivo' }} @if (mTipo() !== 'video' && mTipo() !== 'tarea') { <span class="text-red-500">*</span> }</label>
-            <label class="mt-1 flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-violet-300 hover:bg-violet-50 transition-all">
+            <label class="form-label">
+              {{ mTipo() === 'video' ? 'O sube un archivo de video' : 'Archivo' }}
+              @if (mTipo() === 'tarea' || mTipo() === 'evaluacion' || (mTipo() !== 'video' && mTipo() !== 'clase' && mTipo() !== 'lectura')) {
+                <span class="text-red-500">*</span>
+              }
+            </label>
+            <label class="mt-1 flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed rounded-xl cursor-pointer transition-all"
+              [ngClass]="errorArchivo() ? 'border-red-300 bg-red-50/40' : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50'">
               <input type="file" class="sr-only" [accept]="acceptFor(mTipo())" (change)="onFileSelect($event)">
               @if (mArchivoNombre()) {
                 <span class="text-2xl">📎</span>
@@ -327,6 +340,9 @@ import {
             </label>
             @if (svc.uploading()) {
               <p class="text-xs text-violet-600 mt-2">Subiendo archivo…</p>
+            }
+            @if (errorArchivo()) {
+              <p class="text-xs text-red-600 mt-2">{{ errorArchivo() }}</p>
             }
           </div>
         }
@@ -347,7 +363,7 @@ import {
 
       <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
         <button type="button" (click)="cerrarModal()" class="btn btn-secondary text-sm">Cancelar</button>
-        <button type="button" (click)="guardar()" [disabled]="!puedeGuardar() || svc.saving() || svc.uploading()"
+        <button type="button" (click)="guardar()" [disabled]="!puedeGuardar() || !!errorArchivo() || svc.saving() || svc.uploading()"
           class="btn btn-primary text-sm">
           {{ svc.saving() ? 'Guardando…' : (editId() ? 'Guardar cambios' : 'Publicar material') }}
         </button>
@@ -408,7 +424,9 @@ export class RecursosComponent implements OnInit {
   readonly mArchivoTamano = signal(0);
   private mArchivoFile: File | null = null;
   readonly mVisible = signal(true);
+  readonly errorArchivo = signal('');
   readonly eliminarTarget = signal<RecursoItem | null>(null);
+  readonly togglingId = signal<number | null>(null);
   readonly toast = signal<{ msg: string; tipo: 'ok' | 'err' } | null>(null);
 
   readonly tiposFiltro = TIPOS_RECURSO;
@@ -464,6 +482,13 @@ export class RecursosComponent implements OnInit {
       !this.editId()
     ) {
       return false;
+    }
+    if (this.mTipo() === 'tarea' || this.mTipo() === 'evaluacion') {
+      const tieneArchivo =
+        !!this.mArchivoFile ||
+        !!this.mArchivoNombre().trim() ||
+        !!this.mArchivoUrl().trim();
+      if (!tieneArchivo) return false;
     }
     if (
       this.usaArchivo() &&
@@ -570,6 +595,7 @@ export class RecursosComponent implements OnInit {
       this.mArchivoTamano.set(item.tamanoBytes ?? 0);
       this.mArchivoFile = null;
       this.mVisible.set(item.visible);
+      this.errorArchivo.set('');
     } else {
       this.editId.set(null);
       this.mCursoClave.set(this.cursosSalon()[0]?.clave ?? '');
@@ -585,6 +611,7 @@ export class RecursosComponent implements OnInit {
       this.mArchivoTamano.set(0);
       this.mArchivoFile = null;
       this.mVisible.set(true);
+      this.errorArchivo.set('');
     }
     this.modalOpen.set(true);
   }
@@ -596,6 +623,7 @@ export class RecursosComponent implements OnInit {
 
   onTipoChange(tipo: RecursoTipo): void {
     this.mTipo.set(tipo);
+    this.errorArchivo.set('');
     if (!this.usaUrl()) this.mUrl.set('');
     if (!this.usaArchivo()) {
       this.mArchivoNombre.set('');
@@ -607,9 +635,24 @@ export class RecursosComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+
+    const check = validateFileForTipo(file, this.mTipo());
+    if (!check.ok) {
+      this.mArchivoFile = null;
+      this.mArchivoNombre.set('');
+      this.mArchivoTamano.set(0);
+      this.mArchivoMime.set('');
+      this.mArchivoUrl.set('');
+      this.errorArchivo.set(check.message);
+      input.value = '';
+      return;
+    }
+
+    this.errorArchivo.set('');
     this.mArchivoFile = file;
     this.mArchivoNombre.set(file.name);
     this.mArchivoTamano.set(file.size);
+    this.mArchivoMime.set(file.type || mimeFromFileName(file.name));
     this.mArchivoUrl.set('');
   }
 
@@ -619,7 +662,9 @@ export class RecursosComponent implements OnInit {
     const curso = this.cursosSalon().find((c) => c.clave === this.mCursoClave());
     if (!salon || !curso) return;
 
-    const buildPayload = (fileMeta?: { url: string; nombreArchivo: string; mimeType: string; tamanoBytes: number }): RecursoPayload => ({
+    const buildCreatePayload = (
+      fileMeta?: { url: string; nombreArchivo: string; mimeType: string; tamanoBytes: number },
+    ): RecursoPayload => ({
       titulo: this.mTitulo().trim(),
       descripcion: this.mDescripcion().trim(),
       tipo: this.mTipo(),
@@ -638,6 +683,21 @@ export class RecursosComponent implements OnInit {
       visible: this.mVisible(),
     });
 
+    const buildUpdatePayload = (
+      fileMeta?: { url: string; nombreArchivo: string; mimeType: string; tamanoBytes: number },
+    ): RecursoUpdatePayload => ({
+      titulo: this.mTitulo().trim(),
+      descripcion: this.mDescripcion().trim(),
+      tipo: this.mTipo(),
+      fechaPublicacion: this.mFechaPubl(),
+      fechaEntrega: this.mFechaEntrega() || undefined,
+      url: this.usaUrl() ? this.mUrl().trim() : fileMeta?.url ?? this.mArchivoUrl(),
+      nombreArchivo: fileMeta?.nombreArchivo ?? this.mArchivoNombre(),
+      mimeType: fileMeta?.mimeType ?? this.mArchivoMime(),
+      tamanoBytes: fileMeta?.tamanoBytes ?? this.mArchivoTamano(),
+      visible: this.mVisible(),
+    });
+
     const id = this.editId();
     const uploadAndSave = this.mArchivoFile
       ? this.svc.upload(this.mArchivoFile, {
@@ -647,11 +707,15 @@ export class RecursosComponent implements OnInit {
           seccion: salon.seccion,
         }).pipe(
           switchMap((uploaded) => {
-            const payload = buildPayload(uploaded);
-            return id ? this.svc.update(id, payload) : this.svc.create(payload);
+            if (id) {
+              return this.svc.update(id, buildUpdatePayload(uploaded));
+            }
+            return this.svc.create(buildCreatePayload(uploaded));
           }),
         )
-      : (id ? this.svc.update(id, buildPayload()) : this.svc.create(buildPayload()));
+      : id
+        ? this.svc.update(id, buildUpdatePayload())
+        : this.svc.create(buildCreatePayload());
 
     uploadAndSave.subscribe({
       next: (saved) => {
@@ -663,23 +727,41 @@ export class RecursosComponent implements OnInit {
           this.recursos.update((list) => [enriched, ...list]);
           this.mostrarToast(`"${saved.titulo}" publicado`, 'ok');
         }
-        this.cerrarModal();
+        this.modalOpen.set(false);
       },
       error: (err) => {
         const msg = err?.error?.message;
-        this.mostrarToast(Array.isArray(msg) ? msg.join(', ') : msg ?? 'Error al guardar', 'err');
+        const text = Array.isArray(msg)
+          ? msg.join(', ')
+          : typeof msg === 'string'
+            ? msg
+            : err?.message ?? 'Error al guardar';
+        this.mostrarToast(text, 'err');
       },
     });
   }
 
   toggleVisible(item: RecursoItem): void {
-    this.svc.update(item.id, { visible: !item.visible }).subscribe({
+    const next = !item.visible;
+    this.togglingId.set(item.id);
+    this.svc.setVisibility(item.id, next).subscribe({
       next: (saved) => {
         const enriched = this.enrich(saved);
         this.recursos.update((list) => list.map((r) => (r.id === item.id ? enriched : r)));
-        this.mostrarToast(saved.visible ? 'Recurso visible' : 'Recurso oculto', 'ok');
+        this.togglingId.set(null);
+        this.mostrarToast(
+          enriched.visible ? 'Recurso visible para alumnos' : 'Recurso oculto para alumnos',
+          'ok',
+        );
       },
-      error: () => this.mostrarToast('No se pudo cambiar la visibilidad', 'err'),
+      error: (err) => {
+        this.togglingId.set(null);
+        const msg = err?.error?.message ?? err?.userMessage;
+        this.mostrarToast(
+          Array.isArray(msg) ? msg.join(', ') : msg ?? 'No se pudo cambiar la visibilidad',
+          'err',
+        );
+      },
     });
   }
 
@@ -736,6 +818,7 @@ export class RecursosComponent implements OnInit {
     const filePath = r.url && !r.url.startsWith('http') ? r.url : '';
     return {
       ...r,
+      visible: coerceResourceVisible(r.visible),
       mimeType: r.mimeType ?? '',
       tamanoBytes: r.tamanoBytes ?? 0,
       cursoLabel: curso ? `${r.curso} · ${curso.gradoLabel}` : `${r.curso} · ${r.grado} ${r.seccion}`,

@@ -4,13 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
+import { CompetenciasComponent } from '../competencias/competencias.component';
 import { NotasRegistroService } from './notas-registro.service';
 import { PortalDocenteService } from '../../portal-docente/portal-docente.service';
 import {
   GradeRegistryResponse,
-  nivelBadge,
   NotasRegistroFilters,
-  promedioColor,
   RegistryAlumnoRow,
   RegistryContextItem,
   SaveNotasRegistroPayload,
@@ -29,8 +29,19 @@ interface ConfirmGuardadoResumen {
 @Component({
   selector: 'app-evaluacion-notas',
   standalone: true,
-  imports: [FormsModule, NgClass],
+  imports: [FormsModule, NgClass, CompetenciasComponent],
   template: `
+    @if (modoSoloCompetencias()) {
+      <app-competencias [cursoInicial]="cursoInicial()" />
+    } @else if (!grading.usesNumeric()) {
+      <div class="card p-8 text-center space-y-3">
+        <span class="icon text-4xl text-gray-300">grading</span>
+        <h2 class="text-lg font-semibold text-gray-800">Registro de calificaciones no disponible</h2>
+        <p class="text-sm text-gray-500 max-w-md mx-auto">
+          La institución usa calificación {{ grading.labelSistema() }}.
+        </p>
+      </div>
+    } @else {
     <div class="space-y-5">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         @if (!modoEmbeddido()) {
@@ -229,7 +240,9 @@ interface ConfirmGuardadoResumen {
                     </th>
                   }
                   <th class="text-center">Promedio</th>
-                  <th class="text-center">Nivel</th>
+                  @if (grading.usesCompetencias()) {
+                    <th class="text-center">Nivel</th>
+                  }
                 </tr>
               </thead>
               <tbody>
@@ -239,7 +252,7 @@ interface ConfirmGuardadoResumen {
                     <td class="font-medium">{{ a.apellido }}, {{ a.nombre }}</td>
                     @for (c of formula()?.componentes ?? []; track c.codigo) {
                       <td class="text-center">
-                        <input type="number" min="0" max="20" step="0.1"
+                        <input type="number" min="0" [max]="grading.notaMaxima()" step="0.1"
                           [ngModel]="a.componentes[c.codigo]?.nota"
                           (ngModelChange)="setNota(a, c.codigo, $event)"
                           [disabled]="!bimestreHabilitado()"
@@ -247,12 +260,14 @@ interface ConfirmGuardadoResumen {
                           [class.bg-gray-50]="!bimestreHabilitado()">
                       </td>
                     }
-                    <td class="text-center font-bold" [ngClass]="promedioColor(promedioAlumno(a))">
+                    <td class="text-center font-bold" [ngClass]="colorPromedio(promedioAlumno(a))">
                       {{ promedioAlumno(a) ?? '—' }}
                     </td>
-                    <td class="text-center">
-                      <span class="badge" [ngClass]="nivelBadge(nivelAlumno(a))">{{ nivelAlumno(a) ?? '—' }}</span>
-                    </td>
+                    @if (grading.usesCompetencias()) {
+                      <td class="text-center">
+                        <span class="badge" [ngClass]="badgeNivel(nivelAlumno(a))">{{ nivelAlumno(a) ?? '—' }}</span>
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>
@@ -319,12 +334,14 @@ interface ConfirmGuardadoResumen {
         </div>
       </div>
     }
+    }
   `,
 })
 export class EvaluacionNotasComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   private readonly route = inject(ActivatedRoute);
   private readonly portalDocente = inject(PortalDocenteService);
+  readonly grading = inject(GradingConfigService);
   readonly svc = inject(NotasRegistroService);
 
   readonly modoDocente = input(false);
@@ -334,6 +351,10 @@ export class EvaluacionNotasComponent implements OnInit {
     const c = this.cursoInicial();
     return !!(c?.nivel && c?.grado && c?.seccion && c?.cursoNombre);
   });
+
+  readonly modoSoloCompetencias = computed(
+    () => this.grading.usesCompetencias() && !this.grading.usesNumeric(),
+  );
 
   readonly bimestres = [1, 2, 3, 4];
   readonly bimestreActual = signal(2);
@@ -362,16 +383,17 @@ export class EvaluacionNotasComponent implements OnInit {
     this.contextos().find(c => c.id === this.contextoId()) ?? null,
   );
 
-  promedioColor = promedioColor;
-  nivelBadge = nivelBadge;
+  colorPromedio = (nota: number | null) => this.grading.colorPromedio(nota);
+  badgeNivel = (nivel: string | null) => this.grading.badgeNivel(nivel);
 
   ngOnInit(): void {
+    const soloCompetencias = this.modoSoloCompetencias();
     this.layout.setTitle(
       this.modoEmbeddido()
-        ? 'Notas — Curso asignado'
+        ? soloCompetencias ? 'Competencias — Curso asignado' : 'Notas — Curso asignado'
         : this.modoDocente()
-          ? 'Notas — Mis cursos'
-          : 'Registro de Notas',
+          ? soloCompetencias ? 'Competencias — Mis cursos' : 'Notas — Mis cursos'
+          : soloCompetencias ? 'Calificaciones por competencias' : 'Registro de Notas',
     );
 
     this.route.queryParamMap.subscribe((params) => {
@@ -670,9 +692,7 @@ export class EvaluacionNotasComponent implements OnInit {
     }
     alumno.promedioBimestre = completo ? Math.round(weighted * 10) / 10 : null;
     alumno.nivel = alumno.promedioBimestre !== null
-      ? (alumno.promedioBimestre >= f.escalaLogro.AD ? 'AD'
-        : alumno.promedioBimestre >= f.escalaLogro.A ? 'A'
-        : alumno.promedioBimestre >= f.escalaLogro.B ? 'B' : 'C')
+      ? this.grading.nivelDeNota(alumno.promedioBimestre)
       : null;
   }
 

@@ -42,6 +42,10 @@ export interface CompetencyMatrixResponse {
     tipoPeriodo: string;
   };
   bimestre: number;
+  bimestreActual: number;
+  bimestreHabilitado: boolean;
+  cursoId?: number;
+  cursoNombre?: string;
   nivel: string;
   grado: string;
   seccion: string;
@@ -57,6 +61,7 @@ export interface CompetencyMatrixFilters {
   bimestre: number;
   anio?: number;
   curriculumId?: number;
+  cursoId?: number;
 }
 
 export interface SaveCompetencyEntry {
@@ -73,6 +78,7 @@ export interface SaveCompetencyBulkPayload {
   bimestre: number;
   anio?: number;
   curriculumId?: number;
+  cursoId?: number;
   entries: SaveCompetencyEntry[];
 }
 

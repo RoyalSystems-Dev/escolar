@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { GradingConfigService } from '../../../core/grading/grading-config.service';
 import { EvaluacionNotasComponent } from '../../evaluacion/notas/evaluacion-notas.component';
 import { PortalDocenteService } from '../portal-docente.service';
 import { PortalDocenteCursoCard } from '../portal-docente.model';
@@ -15,9 +16,19 @@ import { PortalDocenteCursoCard } from '../portal-docente.model';
   @if (!cursoSeleccionado()) {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <h2 class="text-xl font-bold text-gray-800">Registro de notas</h2>
+        <h2 class="text-xl font-bold text-gray-800">
+          @if (modoCompetencias()) {
+            Registro por competencias
+          } @else {
+            Registro de notas
+          }
+        </h2>
         <p class="text-sm text-gray-500">
-          Selecciona un curso asignado para registrar calificaciones por bimestre
+          @if (modoCompetencias()) {
+            Selecciona un curso asignado para registrar niveles de logro por bimestre
+          } @else {
+            Selecciona un curso asignado para registrar calificaciones por bimestre
+          }
           @if (anioEscolar()) { · Año {{ anioEscolar() }} }
         </p>
       </div>
@@ -59,7 +70,11 @@ import { PortalDocenteCursoCard } from '../portal-docente.model';
               </div>
             </div>
             <div class="mt-4 text-sm font-medium text-indigo-600 flex items-center gap-1">
-              Registrar notas
+              @if (modoCompetencias()) {
+                Registrar competencias
+              } @else {
+                Registrar notas
+              }
               <span class="icon text-base">arrow_forward</span>
             </div>
           </button>
@@ -92,6 +107,11 @@ export class NotasDocenteComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly svc = inject(PortalDocenteService);
+  readonly grading = inject(GradingConfigService);
+
+  readonly modoCompetencias = computed(
+    () => this.grading.usesCompetencias() && !this.grading.usesNumeric(),
+  );
 
   cursos = signal<PortalDocenteCursoCard[]>([]);
   cursoSeleccionado = signal<PortalDocenteCursoCard | null>(null);
@@ -99,7 +119,7 @@ export class NotasDocenteComponent implements OnInit {
   error = signal('');
 
   ngOnInit(): void {
-    this.layout.setTitle('Notas docente');
+    this.layout.setTitle(this.modoCompetencias() ? 'Competencias docente' : 'Notas docente');
     this.cargarCursos();
 
     this.route.queryParamMap.subscribe((params) => {

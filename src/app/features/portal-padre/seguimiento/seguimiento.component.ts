@@ -42,9 +42,9 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
     <div class="space-y-5 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Seguimiento Académico</h2>
+          <h2 class="text-2xl font-bold text-gray-900">Portal de apoderados</h2>
           <p class="text-sm text-gray-400 mt-0.5">
-            Bienvenido/a, {{ auth.nombreCompleto() }} · Monitoreo del avance de tus hijos
+            Bienvenido/a, {{ auth.nombreCompleto() }} · Resumen del avance de tus hijos
           </p>
         </div>
         <button class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loadingHijos() || svc.loadingTracking()">
@@ -123,7 +123,7 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
         @if (svc.loadingTracking()) {
           <div class="card p-12 flex flex-col items-center text-gray-400">
             <span class="icon icon-xl animate-spin mb-3">progress_activity</span>
-            <p class="text-sm">Cargando seguimiento académico…</p>
+            <p class="text-sm">Cargando información de tus hijos…</p>
           </div>
         } @else if (data(); as d) {
           <div class="card p-4 bg-gradient-to-r from-indigo-50 to-white border-indigo-100">
@@ -176,7 +176,7 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
                   <span class="icon text-indigo-500">grading</span> Rendimiento por curso
                 </h4>
                 @if (!d.cursos.length) {
-                  <p class="text-sm text-gray-400 text-center py-6">Sin notas registradas</p>
+                  <p class="text-sm text-gray-400 text-center py-6">Sin cursos asignados en el horario</p>
                 } @else {
                   <div class="space-y-3">
                     @for (c of d.cursos; track c.curso) {
@@ -186,16 +186,22 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
                           [ngClass]="style.colorClass">{{ style.emoji }}</div>
                         <div class="flex-1 min-w-0">
                           <p class="font-medium text-gray-800 truncate">{{ c.curso }}</p>
-                          <p class="text-xs text-gray-400">B1: {{ c.b1 ?? '—' }} · B2: {{ c.b2 ?? '—' }}</p>
+                          <p class="text-xs text-gray-400">
+                            B1: {{ valorBimestre(c.b1, c.b1Nivel) }} · B2: {{ valorBimestre(c.b2, c.b2Nivel) }}
+                          </p>
                         </div>
-                        @if (c.promedio !== null) {
-                          <div class="text-right shrink-0">
+                        <div class="text-right shrink-0">
+                          @if (c.promedio !== null) {
                             <p class="font-bold" [ngClass]="notaColor(c.promedio)">{{ c.promedio | number:'1.1-1' }}</p>
                             @if (c.nivel) {
                               <span class="badge text-[10px]" [ngClass]="nivelBadge(c.nivel)">{{ c.nivel }}</span>
                             }
-                          </div>
-                        }
+                          } @else if (c.nivel) {
+                            <span class="badge text-xs" [ngClass]="nivelBadge(c.nivel)">{{ c.nivel }}</span>
+                          } @else {
+                            <p class="text-sm text-gray-400">Sin promedio</p>
+                          }
+                        </div>
                       </div>
                     }
                   </div>
@@ -261,7 +267,7 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
             <div class="space-y-4">
               @if (!d.cursos.length) {
                 <div class="card p-12 text-center text-gray-400">
-                  <p class="text-sm">No hay notas registradas para este estudiante.</p>
+                  <p class="text-sm">No hay cursos asignados en el horario de este estudiante.</p>
                 </div>
               } @else {
                 @for (c of d.cursos; track c.curso) {
@@ -273,17 +279,22 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
                       <div class="flex-1 min-w-0">
                         <h4 class="font-semibold text-gray-800">{{ c.curso }}</h4>
                         <p class="text-xs text-gray-400">
-                          B1: {{ c.b1 ?? '—' }} · B2: {{ c.b2 ?? '—' }} · B3: {{ c.b3 ?? '—' }} · B4: {{ c.b4 ?? '—' }}
+                          B1: {{ valorBimestre(c.b1, c.b1Nivel) }} · B2: {{ valorBimestre(c.b2, c.b2Nivel) }} ·
+                          B3: {{ valorBimestre(c.b3, c.b3Nivel) }} · B4: {{ valorBimestre(c.b4, c.b4Nivel) }}
                         </p>
                       </div>
-                      @if (c.promedio !== null) {
-                        <div class="text-right">
+                      <div class="text-right">
+                        @if (c.promedio !== null) {
                           <p class="text-xl font-bold" [ngClass]="notaColor(c.promedio)">{{ c.promedio | number:'1.1-1' }}</p>
                           @if (c.nivel) {
                             <span class="badge text-xs" [ngClass]="nivelBadge(c.nivel)">{{ c.nivel }}</span>
                           }
-                        </div>
-                      }
+                        } @else if (c.nivel) {
+                          <span class="badge text-xs" [ngClass]="nivelBadge(c.nivel)">{{ c.nivel }}</span>
+                        } @else {
+                          <p class="text-sm text-gray-400">Sin promedio</p>
+                        }
+                      </div>
                     </div>
                     @if (c.ultimasNotas.length) {
                       <div class="overflow-x-auto">
@@ -604,12 +615,18 @@ export class SeguimientoComponent implements OnInit {
   tareaEstadoBadge = tareaEstadoBadge;
   taskFileUrl = taskFileUrl;
 
+  valorBimestre(nota: number | null | undefined, nivel: string | null | undefined): string {
+    if (nota !== null && nota !== undefined) return String(nota);
+    if (nivel) return nivel;
+    return '—';
+  }
+
   tipoComCfg(tipo: TipoCom) {
     return TIPO_COM_CFG[tipo] ?? TIPO_COM_CFG.general;
   }
 
   ngOnInit(): void {
-    this.layout.setTitle('Seguimiento Académico');
+    this.layout.setTitle('Inicio');
     this.comunicadosSvc.load();
     this.cargar();
   }

@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import type { EvalNavMode } from '../../grading/grading-config.model';
 
 export interface NavItem {
   label: string;
@@ -9,8 +10,11 @@ export interface NavItem {
   roles?: string[];
   permisos?: string[];
   badge?: number;
+  exact?: boolean;
   /** staff = módulos administrativos; portal-* = portales por rol */
   zone?: 'staff' | 'portal-docente' | 'portal-estudiante' | 'portal-padre' | 'shared';
+  /** Filtra ítems según sistema de calificación institucional */
+  evalMode?: EvalNavMode;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -18,11 +22,14 @@ export class LayoutService {
   private readonly _miniMode  = signal(false);
   private readonly _mobileOpen = signal(false);
   private readonly _isMobile  = signal(false);
+  private readonly _isPhone   = signal(false);
   private readonly _pageTitle = signal('Dashboard');
 
   readonly miniMode    = this._miniMode.asReadonly();
   readonly mobileOpen  = this._mobileOpen.asReadonly();
   readonly isMobile    = this._isMobile.asReadonly();
+  /** Teléfono (< md / 768px): menú app inferior del portal estudiante */
+  readonly isPhone     = this._isPhone.asReadonly();
   readonly pageTitle   = this._pageTitle.asReadonly();
 
   readonly sidebarVisible = computed(() =>
@@ -42,7 +49,16 @@ export class LayoutService {
     this._isMobile.set(v);
     if (v) this._mobileOpen.set(false);
   }
+  setPhone(v: boolean): void { this._isPhone.set(v); }
   setTitle(t: string): void { this._pageTitle.set(t); }
+
+  /** Navegación principal tipo app móvil del portal estudiante */
+  readonly studentAppNav: NavItem[] = [
+    { label: 'Home', icon: 'home', route: '/portal-estudiante/dashboard', exact: true },
+    { label: 'Mis cursos', icon: 'menu_book', route: '/portal-estudiante/clases' },
+    { label: 'Notificaciones', icon: 'notifications', route: '/portal-estudiante/comunicados' },
+    { label: 'Tareas', icon: 'assignment', route: '/portal-estudiante/tareas' },
+  ];
 
   readonly nav: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard', permisos: ['dashboard.ver'], zone: 'shared' },
@@ -93,8 +109,7 @@ export class LayoutService {
       label: 'Evaluación', icon: 'grading', zone: 'staff',
       permisos: ['evaluacion.ver'],
       children: [
-        { label: 'Registro de Notas', icon: 'edit_note',      route: '/evaluacion/notas',       permisos: ['evaluacion.registrar', 'evaluacion.ver'] },
-        { label: 'Por Competencias',  icon: 'stars',          route: '/evaluacion/competencias', permisos: ['evaluacion.ver'] },
+        { label: 'Calificaciones', icon: 'grading', route: '/evaluacion/notas', permisos: ['evaluacion.registrar', 'evaluacion.ver'] },
         { label: 'Promedios',         icon: 'calculate',      route: '/evaluacion/promedios',   permisos: ['evaluacion.reportes', 'evaluacion.ver'] },
         { label: 'Libretas',          icon: 'picture_as_pdf', route: '/evaluacion/libretas',    permisos: ['evaluacion.ver'] },
         { label: 'Actas',             icon: 'article',        route: '/evaluacion/actas',       permisos: ['evaluacion.aprobar', 'evaluacion.ver'] },
@@ -137,8 +152,10 @@ export class LayoutService {
     {
       label: 'Portal Padre', icon: 'family_restroom', zone: 'portal-padre', roles: ['PADRE'],
       children: [
-        { label: 'Seguimiento',   icon: 'visibility',             route: '/portal-padre/seguimiento'  },
+        { label: 'Inicio',        icon: 'home',                   route: '/portal-padre/inicio', exact: true },
         { label: 'Ficha del alumno', icon: 'badge',               route: '/portal-padre/ficha'        },
+        { label: 'Tareas',        icon: 'assignment',             route: '/portal-padre/tareas'       },
+        { label: 'Clases',        icon: 'menu_book',              route: '/portal-padre/clases'       },
         { label: 'Horarios',      icon: 'schedule',               route: '/portal-padre/horarios'     },
         { label: 'Comunicación',  icon: 'chat',                   route: '/portal-padre/comunicacion' },
         { label: 'Correo a docentes', icon: 'mail',               route: '/portal-padre/correo-docentes' },

@@ -1,9 +1,20 @@
-import { ApiTask } from '../../../core/api/api.models';
+import { ApiTask, ApiResource } from '../../../core/api/api.models';
 import { environment } from '@environments/environment';
 
 export type TareaEstado = ApiTask['estado'];
 export type TareaPrioridad = ApiTask['prioridad'];
 export type TareaVista = 'todas' | 'pendientes' | 'entregadas' | 'vencidas' | 'calificadas';
+
+export interface TareaRecursoDocente {
+  id: number;
+  descripcion: string;
+  tipo: ApiResource['tipo'];
+  url: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanoBytes: number;
+  docente: string;
+}
 
 export interface TareaEstudiante {
   id: number;
@@ -15,6 +26,8 @@ export interface TareaEstudiante {
   diasRestantes: number;
   venceHoy: boolean;
   vencida: boolean;
+  resourceId: number | null;
+  recurso: TareaRecursoDocente | null;
   comentarioEntrega: string;
   archivoEntregaUrl: string | null;
   archivoEntregaNombre: string | null;
@@ -76,6 +89,25 @@ export function taskFileUrl(path: string | null | undefined): string {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+export function materialRecursoUrl(url: string | null | undefined): string | null {
+  const raw = url?.trim();
+  if (!raw) return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  return taskFileUrl(raw);
+}
+
+export function materialRecursoNombre(
+  nombreArchivo: string | null | undefined,
+  url: string | null | undefined,
+): string {
+  const name = nombreArchivo?.trim();
+  if (name) return name;
+  const raw = url?.trim();
+  if (!raw || raw.startsWith('http')) return '';
+  const parts = raw.split('/');
+  return decodeURIComponent(parts[parts.length - 1] ?? 'Archivo adjunto');
 }
 
 export const ACCEPT_ENTREGA =
