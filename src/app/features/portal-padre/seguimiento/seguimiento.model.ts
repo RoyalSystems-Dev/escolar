@@ -65,11 +65,26 @@ export interface TareaSeguimiento {
   calificadoAt?: string | null;
 }
 
+export interface AlertaAusentismoPadre {
+  id: number;
+  mes: string;
+  mesLabel: string;
+  faltasInjustificadas: number;
+  diasConsecutivos: number;
+  nivelAlerta: 'normal' | 'alerta' | 'critico' | string;
+  motivoAlerta: string;
+  notificadoAt: string;
+  notificadoPor: string;
+  correoEnviado: boolean;
+  leidoEnPortal: boolean;
+}
+
 export interface SeguimientoAcademico {
   estudiante: HijoResumen;
   promedioGeneral: number | null;
   nivelGeneral: string | null;
   asistencia: AsistenciaSeguimiento;
+  alertasAusentismo?: AlertaAusentismoPadre[];
   tareasPendientes: number;
   tareasVencidas: number;
   tareasEntregadas: number;
@@ -144,4 +159,12 @@ export function parentescoLabel(parentesco: string): string {
     apoderado: 'Apoderado',
   };
   return map[parentesco] ?? parentesco;
+}
+
+export function alertaAusentismoLabel(nivel: string): string {
+  return { critico: 'Alerta crítica', alerta: 'Alerta temprana', normal: 'Informativa' }[nivel] ?? 'Alerta';
+}
+
+export function alertaAusentismoBadge(nivel: string): string {
+  return { critico: 'badge-red', alerta: 'badge-yellow', normal: 'badge-gray' }[nivel] ?? 'badge-yellow';
 }

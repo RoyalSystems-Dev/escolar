@@ -46,6 +46,7 @@ export const roleGuard = (...roles: string[]): CanActivateFn => () => {
 export const permisoGuard = (...permisos: string[]): CanActivateFn => () => {
   const auth = inject(AuthService);
   if (!permisos.length) return true;
+  if (auth.isAdmin() || auth.hasRole('DIRECTOR')) return true;
   return auth.hasAnyPermiso(...permisos) ? true : redirectSinPermiso();
 };
 

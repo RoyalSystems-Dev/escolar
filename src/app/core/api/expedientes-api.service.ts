@@ -7,18 +7,26 @@ import {
   ApiExpedienteDocumento,
   ApiRepresentante,
   ApiStudentDocumentsResponse,
+  StudentsStats,
 } from './api.models';
 import { DocumentoRequerido } from '../../features/estudiantes/shared/documentos-requisitos';
 
 export interface ExpedientePayload {
   nombres: string;
   apellidos: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
   codigo?: string;
   dni?: string;
+  tipoDocumento?: string;
   email: string;
   fechaNac?: string;
   sexo?: 'M' | 'F';
   direccion?: string;
+  distrito?: string;
+  provincia?: string;
+  departamento?: string;
+  telefonoEmergencia?: string;
   foto?: string;
   grupoSanguineo?: string;
   alergias?: string;
@@ -65,6 +73,10 @@ export class ExpedientesApiService {
   list(q?: string): Observable<ApiExpediente[]> {
     const params = q?.trim() ? new HttpParams().set('q', q.trim()) : undefined;
     return this.http.get<ApiExpediente[]>(this.base, { params });
+  }
+
+  getStats(): Observable<StudentsStats> {
+    return this.http.get<StudentsStats>(`${this.base}/stats`);
   }
 
   getRequisitos(gradoLabel: string): Observable<DocumentoRequerido[]> {

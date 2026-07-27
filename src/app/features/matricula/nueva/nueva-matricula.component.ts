@@ -7,15 +7,49 @@ import { NuevaMatriculaService } from './nueva-matricula.service';
 import {
   buildNuevaMatriculaPayload,
   ExpedienteCreado,
+  formatDireccion,
+  joinApellidos,
   nivelLabel,
   OcupacionSeccion,
+  validarApoderado,
 } from './nueva-matricula.model';
 import { requisitosPorGrado } from '../../estudiantes/shared/documentos-requisitos';
+import {
+  labelNumeroDocumento,
+  maxLengthNumeroDocumento,
+  placeholderNumeroDocumento,
+  TIPOS_DOCUMENTO_IDENTIDAD,
+  TipoDocumentoIdentidad,
+  validarCelular,
+  validarNumeroDocumento,
+} from '../../estudiantes/shared/identidad-documento';
 
 interface Paso { id: number; titulo: string; icon: string; color: string; ring: string; ringColor: string; textColor: string; dot: string; }
 interface DocMat { tipo: string; obligatorio: boolean; estado: 'pendiente' | 'entregado'; imagenUrl?: string; }
-interface Apoderado { nombres: string; dni: string; parentesco: string; celular: string; email: string; esPrincipal: boolean; }
-function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni:'', parentesco: principal ? 'padre' : 'madre', celular:'', email:'', esPrincipal: principal }; }
+interface Apoderado {
+  nombres: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  tipoDocumento: TipoDocumentoIdentidad;
+  dni: string;
+  parentesco: string;
+  celular: string;
+  email: string;
+  esPrincipal: boolean;
+}
+function apoderadoVacio(principal = false): Apoderado {
+  return {
+    nombres: '',
+    apellidoPaterno: '',
+    apellidoMaterno: '',
+    tipoDocumento: 'DNI',
+    dni: '',
+    parentesco: principal ? 'padre' : 'madre',
+    celular: '',
+    email: '',
+    esPrincipal: principal,
+  };
+}
 
 @Component({
   selector: 'app-nueva-matricula',
@@ -97,24 +131,39 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
             </div>
           </div>
           <div class="p-6 space-y-5">
-            <!-- Nombre y apellido -->
+            <!-- Nombre y apellidos -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="form-group">
+              <div class="form-group sm:col-span-2">
                 <label class="form-label">Nombres <span class="text-red-400">*</span></label>
                 <input type="text" class="form-input" [(ngModel)]="form.nombres" placeholder="Ej: Juan Carlos">
               </div>
               <div class="form-group">
-                <label class="form-label">Apellidos <span class="text-red-400">*</span></label>
-                <input type="text" class="form-input" [(ngModel)]="form.apellidos" placeholder="Ej: García Pérez">
+                <label class="form-label">Apellido paterno <span class="text-red-400">*</span></label>
+                <input type="text" class="form-input" [(ngModel)]="form.apellidoPaterno" placeholder="Ej: García">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Apellido materno <span class="text-red-400">*</span></label>
+                <input type="text" class="form-input" [(ngModel)]="form.apellidoMaterno" placeholder="Ej: Pérez">
               </div>
             </div>
-            <!-- DNI y fecha -->
+            <!-- Documento de identidad -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="form-group">
-                <label class="form-label">DNI <span class="text-red-400">*</span></label>
-                <input type="text" class="form-input" [(ngModel)]="form.dni" placeholder="00000000" maxlength="8">
+                <label class="form-label">Tipo de documento <span class="text-red-400">*</span></label>
+                <select class="form-input" [(ngModel)]="form.tipoDocumento">
+                  @for (t of tiposDocumento; track t.value) {
+                    <option [ngValue]="t.value">{{ t.label }}</option>
+                  }
+                </select>
               </div>
               <div class="form-group">
+                <label class="form-label">{{ labelDocumento() }} <span class="text-red-400">*</span></label>
+                <input type="text" class="form-input" [(ngModel)]="form.dni"
+                       [placeholder]="placeholderDocumento()"
+                       [maxlength]="maxLengthDocumento()"
+                       [attr.inputmode]="form.tipoDocumento === 'DNI' ? 'numeric' : 'text'">
+              </div>
+              <div class="form-group sm:col-span-2">
                 <label class="form-label">Fecha de Nacimiento</label>
                 <input type="date" class="form-input" [(ngModel)]="form.fechaNac">
               </div>
@@ -139,6 +188,29 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
               <div class="form-group">
                 <label class="form-label">Teléfono de emergencia</label>
                 <input type="tel" class="form-input" [(ngModel)]="form.telEmergencia" placeholder="999 999 999">
+              </div>
+            </div>
+            <!-- Dirección -->
+            <div>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Dirección de domicilio</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group sm:col-span-2">
+                  <label class="form-label">Dirección <span class="text-red-400">*</span></label>
+                  <input type="text" class="form-input" [(ngModel)]="form.direccion"
+                         placeholder="Av. / Jr. / Calle, N° de vivienda">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Distrito</label>
+                  <input type="text" class="form-input" [(ngModel)]="form.distrito" placeholder="Ej: San Juan de Miraflores">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Provincia</label>
+                  <input type="text" class="form-input" [(ngModel)]="form.provincia" placeholder="Ej: Lima">
+                </div>
+                <div class="form-group sm:col-span-2">
+                  <label class="form-label">Departamento</label>
+                  <input type="text" class="form-input" [(ngModel)]="form.departamento" placeholder="Ej: Lima">
+                </div>
               </div>
             </div>
           </div>
@@ -179,7 +251,7 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
                     {{ ap.nombres ? ap.nombres[0].toUpperCase() : '?' }}
                   </div>
                   <div>
-                    <div class="font-semibold text-gray-900 text-sm">{{ ap.nombres || ('Apoderado ' + (i + 1)) }}</div>
+                    <div class="font-semibold text-gray-900 text-sm">{{ nombreCompletoApoderado(ap) || ('Apoderado ' + (i + 1)) }}</div>
                     <div class="flex items-center gap-1.5 mt-0.5">
                       @if (ap.esPrincipal) {
                         <span class="inline-flex items-center gap-0.5 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">
@@ -209,12 +281,31 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
               <div class="p-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div class="form-group sm:col-span-2">
-                    <label class="form-label">Nombres y Apellidos{{ ap.esPrincipal ? ' *' : '' }}</label>
-                    <input type="text" class="form-input" [(ngModel)]="ap.nombres" placeholder="Nombre completo">
+                    <label class="form-label">Nombres{{ ap.esPrincipal ? ' *' : '' }}</label>
+                    <input type="text" class="form-input" [(ngModel)]="ap.nombres" placeholder="Ej: Carlos">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">DNI</label>
-                    <input type="text" class="form-input" [(ngModel)]="ap.dni" placeholder="00000000" maxlength="8">
+                    <label class="form-label">Apellido paterno{{ ap.esPrincipal ? ' *' : '' }}</label>
+                    <input type="text" class="form-input" [(ngModel)]="ap.apellidoPaterno" placeholder="Ej: Vega">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Apellido materno{{ ap.esPrincipal ? ' *' : '' }}</label>
+                    <input type="text" class="form-input" [(ngModel)]="ap.apellidoMaterno" placeholder="Ej: Ramos">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Tipo de documento{{ ap.esPrincipal ? ' *' : '' }}</label>
+                    <select class="form-input" [(ngModel)]="ap.tipoDocumento">
+                      @for (t of tiposDocumento; track t.value) {
+                        <option [ngValue]="t.value">{{ t.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">{{ labelDocumentoApoderado(ap) }}{{ ap.esPrincipal ? ' *' : '' }}</label>
+                    <input type="text" class="form-input" [(ngModel)]="ap.dni"
+                           [placeholder]="placeholderDocumentoApoderado(ap)"
+                           [maxlength]="maxLengthDocumentoApoderado(ap)"
+                           [attr.inputmode]="ap.tipoDocumento === 'DNI' ? 'numeric' : 'text'">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Parentesco</label>
@@ -231,7 +322,7 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
                     <label class="form-label">Celular{{ ap.esPrincipal ? ' *' : '' }}</label>
                     <input type="tel" class="form-input" [(ngModel)]="ap.celular" placeholder="999 999 999">
                   </div>
-                  <div class="form-group">
+                  <div class="form-group sm:col-span-2">
                     <label class="form-label">Correo electrónico</label>
                     <input type="email" class="form-input" [(ngModel)]="ap.email" placeholder="correo@ejemplo.com">
                   </div>
@@ -493,7 +584,7 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
               <span class="icon text-white" style="font-size:46px">check_circle</span>
             </div>
             <h3 class="text-2xl font-bold text-white">¡Matrícula completada!</h3>
-            <p class="text-green-100 text-sm mt-1">{{ form.nombres }} {{ form.apellidos }} · {{ gradoNombre() }} — Sección {{ form.seccion }}</p>
+            <p class="text-green-100 text-sm mt-1">{{ nombreCompletoEstudiante() }} · {{ gradoNombre() }} — Sección {{ form.seccion }}</p>
             @if (resultado()?.codigo) {
               <div class="mt-4 px-5 py-2.5 bg-white/20 backdrop-blur-sm rounded-xl text-white font-mono text-lg tracking-wider">
                 Código: {{ resultado()!.codigo }}
@@ -514,8 +605,17 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
                   <span class="text-sm font-bold text-gray-700">Estudiante</span>
                 </div>
                 <div class="space-y-2 text-sm">
-                  <div><span class="text-xs text-gray-400 block">Nombre completo</span><span class="font-semibold">{{ form.nombres }} {{ form.apellidos }}</span></div>
-                  <div><span class="text-xs text-gray-400 block">DNI</span><span class="font-semibold">{{ form.dni || '—' }}</span></div>
+                  <div><span class="text-xs text-gray-400 block">Nombre completo</span><span class="font-semibold">{{ nombreCompletoEstudiante() }}</span></div>
+                  <div><span class="text-xs text-gray-400 block">Apellido paterno</span><span class="font-semibold">{{ form.apellidoPaterno || '—' }}</span></div>
+                  <div><span class="text-xs text-gray-400 block">Apellido materno</span><span class="font-semibold">{{ form.apellidoMaterno || '—' }}</span></div>
+                  <div><span class="text-xs text-gray-400 block">Tipo de documento</span><span class="font-semibold">{{ labelTipoDocumento(form.tipoDocumento) }}</span></div>
+                  <div><span class="text-xs text-gray-400 block">{{ labelDocumento() }}</span><span class="font-semibold">{{ form.dni || '—' }}</span></div>
+                  @if (direccionCompleta()) {
+                    <div><span class="text-xs text-gray-400 block">Dirección</span><span class="font-semibold">{{ direccionCompleta() }}</span></div>
+                  }
+                  @if (form.telEmergencia.trim()) {
+                    <div><span class="text-xs text-gray-400 block">Tel. emergencia</span><span class="font-semibold">{{ form.telEmergencia }}</span></div>
+                  }
                   @if (resultado()?.email) {
                     <div><span class="text-xs text-gray-400 block">Correo institucional</span><span class="font-semibold text-sm">{{ resultado()!.email }}</span></div>
                   }
@@ -539,8 +639,12 @@ function apoderadoVacio(principal = false): Apoderado { return { nombres:'', dni
                         {{ ap.nombres ? ap.nombres[0].toUpperCase() : '?' }}
                       </div>
                       <div class="min-w-0 flex-1">
-                        <div class="font-semibold truncate">{{ ap.nombres || '—' }}</div>
-                        <div class="text-xs text-gray-400 capitalize">{{ ap.parentesco }}{{ ap.celular ? ' · ' + ap.celular : '' }}</div>
+                        <div class="font-semibold truncate">{{ nombreCompletoApoderado(ap) || '—' }}</div>
+                        <div class="text-xs text-gray-400 capitalize">
+                          {{ ap.parentesco }}
+                          · {{ labelTipoDocumento(ap.tipoDocumento) }} {{ ap.dni || '—' }}
+                          {{ ap.celular ? ' · ' + ap.celular : '' }}
+                        </div>
                       </div>
                       @if (ap.esPrincipal) {
                         <span class="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-semibold shrink-0">Principal</span>
@@ -654,8 +758,11 @@ export class NuevaMatriculaComponent implements OnInit {
     { val:'secundaria', label:'Secundaria', icon:'school',      active:'border-purple-500 bg-purple-50 text-purple-700'  },
   ];
 
+  readonly tiposDocumento = TIPOS_DOCUMENTO_IDENTIDAD;
+
   form = {
-    nombres:'', apellidos:'', dni:'', fechaNac:'', sexo:'', telEmergencia:'',
+    nombres:'', apellidoPaterno:'', apellidoMaterno:'', tipoDocumento:'DNI' as TipoDocumentoIdentidad, dni:'', fechaNac:'', sexo:'', telEmergencia:'',
+    direccion:'', distrito:'', provincia:'Lima', departamento:'Lima',
     apoderados: [apoderadoVacio(true)] as Apoderado[],
     nivel:'primaria', grado:'1', seccion:'A',
     documentos: [] as DocMat[],
@@ -699,6 +806,52 @@ export class NuevaMatriculaComponent implements OnInit {
   gradoNombre(): string {
     const niv = this.form.nivel === 'primaria' ? 'Primaria' : this.form.nivel === 'secundaria' ? 'Secundaria' : 'Inicial';
     return `${this.form.grado}° ${niv}`;
+  }
+
+  apellidosCompletos(): string {
+    return joinApellidos(this.form.apellidoPaterno, this.form.apellidoMaterno);
+  }
+
+  nombreCompletoEstudiante(): string {
+    const apellidos = this.apellidosCompletos();
+    return apellidos ? `${this.form.nombres.trim()} ${apellidos}` : this.form.nombres.trim();
+  }
+
+  labelDocumento(): string {
+    return labelNumeroDocumento(this.form.tipoDocumento);
+  }
+
+  placeholderDocumento(): string {
+    return placeholderNumeroDocumento(this.form.tipoDocumento);
+  }
+
+  maxLengthDocumento(): number {
+    return maxLengthNumeroDocumento(this.form.tipoDocumento);
+  }
+
+  labelTipoDocumento(tipo: TipoDocumentoIdentidad): string {
+    return TIPOS_DOCUMENTO_IDENTIDAD.find((t) => t.value === tipo)?.label ?? tipo;
+  }
+
+  direccionCompleta(): string {
+    return formatDireccion(this.form);
+  }
+
+  nombreCompletoApoderado(ap: Apoderado): string {
+    const apellidos = joinApellidos(ap.apellidoPaterno, ap.apellidoMaterno);
+    return apellidos ? `${ap.nombres.trim()} ${apellidos}` : ap.nombres.trim();
+  }
+
+  labelDocumentoApoderado(ap: Apoderado): string {
+    return labelNumeroDocumento(ap.tipoDocumento);
+  }
+
+  placeholderDocumentoApoderado(ap: Apoderado): string {
+    return placeholderNumeroDocumento(ap.tipoDocumento);
+  }
+
+  maxLengthDocumentoApoderado(ap: Apoderado): number {
+    return maxLengthNumeroDocumento(ap.tipoDocumento);
   }
 
   gradosDisponibles(): string[] {
@@ -746,12 +899,25 @@ export class NuevaMatriculaComponent implements OnInit {
   }
 
   validarPaso1(): boolean {
-    if (!this.form.nombres.trim() || !this.form.apellidos.trim() || !this.form.dni.trim()) {
-      this.error.set('Completa nombres, apellidos y DNI del estudiante.');
+    if (
+      !this.form.nombres.trim() ||
+      !this.form.apellidoPaterno.trim() ||
+      !this.form.apellidoMaterno.trim() ||
+      !this.form.tipoDocumento ||
+      !this.form.dni.trim() ||
+      !this.form.direccion.trim()
+    ) {
+      this.error.set('Completa nombres, apellidos, documento y dirección del estudiante.');
       return false;
     }
-    if (!/^\d{8}$/.test(this.form.dni.trim())) {
-      this.error.set('El DNI debe tener exactamente 8 dígitos.');
+    const docError = validarNumeroDocumento(this.form.tipoDocumento, this.form.dni);
+    if (docError) {
+      this.error.set(docError);
+      return false;
+    }
+    const telError = validarCelular(this.form.telEmergencia, false);
+    if (telError) {
+      this.error.set(telError);
       return false;
     }
     return true;
@@ -759,14 +925,27 @@ export class NuevaMatriculaComponent implements OnInit {
 
   validarPaso2(): boolean {
     const principal = this.form.apoderados.find((ap) => ap.esPrincipal);
-    if (!principal?.nombres.trim()) {
-      this.error.set('El apoderado principal debe tener nombre completo.');
+    if (!principal) {
+      this.error.set('Debe existir un apoderado principal.');
       return false;
     }
-    if (!principal.celular.trim()) {
-      this.error.set('El apoderado principal debe tener celular de contacto.');
+
+    const principalError = validarApoderado(principal, true);
+    if (principalError) {
+      this.error.set(`Apoderado principal: ${principalError}`);
       return false;
     }
+
+    for (let i = 0; i < this.form.apoderados.length; i++) {
+      const ap = this.form.apoderados[i];
+      if (ap.esPrincipal) continue;
+      const err = validarApoderado(ap, false);
+      if (err) {
+        this.error.set(`Apoderado ${i + 1}: ${err}`);
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -820,7 +999,8 @@ export class NuevaMatriculaComponent implements OnInit {
     this.error.set(null);
     this.resultado.set(null);
     this.ocupacion.set([]);
-    this.form = { nombres:'', apellidos:'', dni:'', fechaNac:'', sexo:'', telEmergencia:'',
+    this.form = { nombres:'', apellidoPaterno:'', apellidoMaterno:'', tipoDocumento:'DNI', dni:'', fechaNac:'', sexo:'', telEmergencia:'',
+      direccion:'', distrito:'', provincia:'Lima', departamento:'Lima',
       apoderados: [apoderadoVacio(true)], nivel:'primaria', grado:'1', seccion:'A', documentos:[] };
   }
 }

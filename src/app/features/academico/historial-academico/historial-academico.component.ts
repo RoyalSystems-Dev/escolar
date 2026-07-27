@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { HistorialAcademicoService } from './historial-academico.service';
 import {
@@ -14,7 +15,7 @@ import {
 @Component({
   selector: 'app-historial-academico',
   standalone: true,
-  imports: [FormsModule, NgClass],
+  imports: [FormsModule, NgClass, RouterLink],
   template: `
 <div class="min-h-screen bg-gray-50 animate-fade-in">
 
@@ -31,6 +32,9 @@ import {
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <a routerLink="/matricula/historial-academico" class="btn btn-secondary text-sm">
+          <span class="icon icon-sm">upload_file</span> Carga masiva
+        </a>
         <span class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-semibold border border-indigo-100">
           {{ alumnosFiltrados().length }} alumno(s)
         </span>

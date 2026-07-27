@@ -41,10 +41,28 @@ export class JustificacionesService {
 
   create(payload: CreateJustificacionPayload): Observable<JustificacionItem> {
     this.saving.set(true);
-    return this.http.post<JustificacionItem>(this.base, payload).pipe(
+    const form = this.buildCreateForm(payload);
+    return this.http.post<JustificacionItem>(this.base, form).pipe(
       catchError((err) => throwError(() => new Error(this.extractError(err)))),
       finalize(() => this.saving.set(false)),
     );
+  }
+
+  private buildCreateForm(payload: CreateJustificacionPayload): FormData {
+    const form = new FormData();
+    form.append('studentId', String(payload.studentId));
+    form.append('cantidad', String(payload.cantidad));
+    form.append('motivo', payload.motivo);
+    if (payload.observacion) form.append('observacion', payload.observacion);
+    if (payload.registradoPor) form.append('registradoPor', payload.registradoPor);
+    if (payload.mes) form.append('mes', payload.mes);
+    if (payload.attendanceIds?.length) {
+      form.append('attendanceIds', JSON.stringify(payload.attendanceIds));
+    }
+    for (const file of payload.adjuntos ?? []) {
+      form.append('adjuntos', file, file.name);
+    }
+    return form;
   }
 
   delete(id: number): Observable<{ deleted: boolean; id: number }> {

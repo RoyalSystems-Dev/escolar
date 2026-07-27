@@ -5,6 +5,12 @@ import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
+import {
+  escapeHtml,
+  printIframe,
+  wrapPrintDocumentHtml,
+  writeHtmlToIframe,
+} from '../../../core/print/print-html.util';
 import { AsignacionService } from './asignacion.service';
 import {
   AsignacionDocente,
@@ -14,6 +20,20 @@ import {
   TipoDocente,
 } from './asignacion.model';
 
+type CoberturaEstado = 'completa' | 'parcial' | 'ninguna' | 'na';
+
+interface CoberturaSeccionItem {
+  seccion: string;
+  docente: string | null;
+  docenteCompleto: string | null;
+}
+
+interface CoberturaCelda {
+  secciones: CoberturaSeccionItem[];
+  cubiertas: number;
+  total: number;
+  estado: CoberturaEstado;
+}
 type Nivel = NivelAsignacion;
 type TipoDoc = TipoDocente;
 type MainTab = 'asignaciones' | 'docentes' | 'cobertura';
@@ -25,6 +45,29 @@ const G_INI = ['3 años', '4 años', '5 años'];
 const G_PRI = ['1°', '2°', '3°', '4°', '5°', '6°'];
 const G_SEC = ['1°', '2°', '3°', '4°', '5°'];
 const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
+
+function gradoAsignacionKey(value: string): string {
+  const t = value.trim().toLowerCase();
+  if (t.includes('año') || t.includes('anos')) {
+    return t.replace(/\s+/g, ' ');
+  }
+  let g = t
+    .replace(/[°º]/g, '')
+    .replace(/\s*(grado|año|ano|anos)\b/g, '')
+    .trim();
+  const withNivel = g.match(/^(.+?)\s+(inicial|primaria|secundaria)$/i);
+  if (withNivel) g = withNivel[1].trim();
+  const num = g.match(/^(\d+)/);
+  return num ? num[1] : g;
+}
+
+function gradosIncluyen(grado: string, grados: string[]): boolean {
+  const key = gradoAsignacionKey(grado);
+  return grados.some((g) => gradoAsignacionKey(g) === key);
+}
+
+const PRINT_PREVIEW_FRAME_ID = 'asignacion-print-preview-frame';
+
 @Component({
   selector: 'app-asignacion',
   standalone: true,
@@ -85,6 +128,23 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
       </div>
     }
 
+    @if (feedback(); as fb) {
+      <div class="mb-4 flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium animate-fade-in"
+        [ngClass]="fb.type === 'success'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'"
+        role="alert">
+        <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            [attr.d]="fb.type === 'success'
+              ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+              : 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'"/>
+        </svg>
+        <span class="flex-1">{{ fb.msg }}</span>
+        <button type="button" class="text-current opacity-60 hover:opacity-100 text-lg leading-none" (click)="cerrarFeedback()">×</button>
+      </div>
+    }
+
     @if (svc.loading()) {
       <div class="mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-indigo-700">
         Cargando asignaciones desde el servidor…
@@ -112,9 +172,9 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
         <div class="text-2xl font-bold" [ngClass]="kpis().sinDocente > 0 ? 'text-orange-600' : 'text-green-600'">
           {{ kpis().sinDocente }}
         </div>
-        <div class="text-xs text-gray-500 mt-1">Cursos Sin Cubrir</div>
+        <div class="text-xs text-gray-500 mt-1">Secciones Sin Cubrir</div>
         <div class="text-xs" [ngClass]="kpis().sinDocente > 0 ? 'text-orange-400' : 'text-green-400'">
-          {{ kpis().sinDocente === 0 ? 'Cobertura completa ✓' : 'Requieren atención' }}
+          {{ kpis().sinDocente === 0 ? 'Todas las secciones cubiertas ✓' : 'Requieren atención' }}
         </div>
       </div>
     </div>
@@ -256,7 +316,8 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
                       </button>
-                      <button class="btn btn-ghost btn-icon text-red-400 hover:text-red-600" title="Eliminar" (click)="eliminarAsig(a.id)">
+                      <button class="btn btn-ghost btn-icon text-red-400 hover:text-red-600" title="Eliminar"
+                        (click)="$event.stopPropagation(); pedirQuitarAsig(a.id)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
@@ -303,7 +364,15 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
               [ngClass]="docenteFilter() === 'sobrecarga' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200'"
               (click)="setDocenteFilter('sobrecarga')">Con Sobrecarga</button>
           </div>
-          <span class="text-sm text-gray-400 ml-auto">{{ totalDocentesFiltrados() }} docente(s)</span>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" class="btn btn-secondary text-sm gap-1.5" (click)="imprimirDocentes()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+              </svg>
+              Imprimir por docente
+            </button>
+            <span class="text-sm text-gray-400">{{ totalDocentesFiltrados() }} docente(s)</span>
+          </div>
         </div>
 
         <p class="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
@@ -418,11 +487,23 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
               </button>
             }
           </div>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-secondary text-sm gap-1.5" (click)="imprimirCobertura()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+              </svg>
+              Imprimir cuadro
+            </button>
+          </div>
           <!-- Legend -->
           <div class="flex items-center gap-4 text-xs text-gray-500">
             <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-amber-100 border border-amber-300"></span>
+              <span>Parcial</span>
+            </div>
+            <div class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-300"></span>
-              <span>Con docente</span>
+              <span>Completa</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded bg-red-100 border border-red-300"></span>
@@ -451,7 +532,7 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
             </div>
           </div>
           <div class="flex justify-between text-xs text-gray-400 mt-1.5">
-            <span>{{ cob.cubiertos }} de {{ cob.total }} combinaciones curso-grado</span>
+            <span>{{ cob.cubiertos }} de {{ cob.total }} combinaciones curso-grado-sección</span>
             <span class="text-red-400 font-medium">{{ cob.total - cob.cubiertos }} sin cubrir</span>
           </div>
         </div>
@@ -486,26 +567,37 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
                   </td>
                   <td class="text-center px-2 py-2 border-r border-b border-gray-100 font-semibold text-indigo-600">{{ cur.horasSemanales }}</td>
                   @for (g of gradosCob(); track g) {
-                    @let aplica = cur.grados.includes(g);
-                    @let docNombre = getDocForCursoGrado(cur.id, g);
-                    <td class="px-2 py-2 border-r border-b border-gray-100 text-center"
-                      [ngClass]="!aplica ? 'bg-gray-50' : docNombre ? 'bg-emerald-50' : 'bg-red-50'">
-                      @if (!aplica) {
+                    @let cel = coberturaCelda(cur.id, g, nivelCob());
+                    <td class="px-2 py-2 border-r border-b border-gray-100 align-top"
+                      [ngClass]="cel.estado === 'na'
+                        ? 'bg-gray-50 text-center'
+                        : cel.estado === 'completa'
+                          ? 'bg-emerald-50'
+                          : cel.estado === 'parcial'
+                            ? 'bg-amber-50'
+                            : 'bg-red-50'">
+                      @if (cel.estado === 'na') {
                         <span class="text-gray-300">—</span>
-                      } @else if (docNombre) {
-                        <div class="leading-tight">
-                          <svg class="w-3 h-3 text-emerald-500 mx-auto mb-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                          <span class="text-emerald-700 font-medium">{{ docNombre }}</span>
-                        </div>
                       } @else {
-                        <div>
-                          <svg class="w-3 h-3 text-red-400 mx-auto mb-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                          </svg>
-                          <button class="text-red-500 hover:text-red-700 font-medium hover:underline"
-                            (click)="abrirDrawerParaCurso(cur.id, g)">Asignar</button>
+                        <div class="space-y-1 min-w-[96px]">
+                          @for (item of cel.secciones; track item.seccion) {
+                            <div class="flex items-center justify-between gap-1 leading-tight px-0.5">
+                              <span class="inline-flex w-5 h-5 items-center justify-center rounded bg-white/80 border border-gray-200 text-[10px] font-bold text-gray-600 shrink-0">
+                                {{ item.seccion }}
+                              </span>
+                              @if (item.docente) {
+                                <span class="text-[10px] text-emerald-700 font-medium truncate" [title]="item.docenteCompleto ?? item.docente">
+                                  {{ item.docente }}
+                                </span>
+                              } @else {
+                                <button type="button"
+                                  class="text-[10px] text-red-600 font-semibold hover:underline shrink-0"
+                                  (click)="abrirDrawerParaCurso(cur.id, g, item.seccion)">
+                                  Asignar
+                                </button>
+                              }
+                            </div>
+                          }
                         </div>
                       }
                     </td>
@@ -614,7 +706,8 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
                   </div>
                   <div class="flex gap-2 mt-3 pt-3 border-t border-gray-200/80">
                     <button type="button" class="btn btn-ghost btn-sm text-xs" (click)="editarAsigDesdeDetalle(a.id)">Editar</button>
-                    <button type="button" class="btn btn-ghost btn-sm text-xs text-red-600" (click)="eliminarAsig(a.id)">Quitar</button>
+                    <button type="button" class="btn btn-ghost btn-sm text-xs text-red-600"
+                      (click)="$event.stopPropagation(); pedirQuitarAsig(a.id)">Quitar</button>
                   </div>
                 </div>
               }
@@ -624,6 +717,12 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
       </div>
 
       <div class="px-6 py-4 border-t border-gray-200 flex gap-3 shrink-0">
+        <button type="button" class="btn btn-secondary" (click)="imprimirDocenteActual()">
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          Imprimir
+        </button>
         <button type="button" class="btn btn-secondary flex-1" (click)="cerrarDetalleDocente()">Cerrar</button>
         <button type="button" class="btn btn-primary flex-1" (click)="abrirDrawerDesdeDetalle()">
           Agregar curso
@@ -779,19 +878,86 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
       <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
         <button class="btn btn-secondary flex-1" (click)="cerrarDrawer()">Cancelar</button>
         <button class="btn btn-primary flex-1"
-          [disabled]="svc.saving() || !dNivel() || !dGrado() || !dCursoId() || !dDocId() || dSecciones().length === 0"
+          [disabled]="svc.saving()"
           (click)="guardarAsig()">
-          {{ svc.saving() ? 'Guardando…' : (editId() ? 'Guardar cambios' : 'Crear asignación') }}
+          {{ svc.saving() ? 'Guardando…' : (editId() ? 'Guardar cambios' : 'Asignar curso') }}
         </button>
       </div>
     </div>
     </div>
   }
 
-  <!-- TOAST -->
+  <!-- MODAL: Confirmar quitar asignación -->
+  @if (quitarTargetId()) {
+    @let det = quitarAsigDetalle();
+    <div appOverlayPortal class="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      (click)="cerrarConfirmQuitar()">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="flex items-start gap-4 mb-4">
+          <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">Quitar curso asignado</h3>
+            <p class="text-sm text-gray-500 mt-0.5">El docente dejará de estar vinculado a este curso.</p>
+          </div>
+        </div>
+        @if (det) {
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 space-y-2 text-sm text-red-900">
+            <p>¿Confirmas quitar la asignación de <strong>«{{ det.curso }}»</strong>?</p>
+            <div class="text-xs text-red-800/90 space-y-1">
+              <div><span class="font-semibold">Docente:</span> {{ det.docente }}</div>
+              <div><span class="font-semibold">Nivel / Grado:</span> {{ det.nivel }} · {{ det.grado }}</div>
+              <div><span class="font-semibold">Secciones:</span> {{ det.secciones }}</div>
+            </div>
+          </div>
+        } @else {
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 text-sm text-red-900">
+            ¿Confirmas quitar esta asignación de curso?
+          </div>
+        }
+        <div class="flex gap-3">
+          <button type="button" class="btn btn-secondary flex-1" (click)="cerrarConfirmQuitar()">Cancelar</button>
+          <button type="button" class="btn btn-danger flex-1" [disabled]="svc.saving()" (click)="confirmarQuitarAsig()">
+            {{ svc.saving() ? 'Quitando…' : 'Sí, quitar curso' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- VISTA PREVIA DE IMPRESIÓN -->
+  @if (printPreviewOpen()) {
+    <div appOverlayPortal class="fixed inset-0 z-[70] flex flex-col bg-gray-900/60" role="dialog" aria-modal="true">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+        <h2 class="text-sm font-semibold text-gray-900 truncate">{{ printPreviewTitle() }}</h2>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" class="btn btn-secondary text-sm" (click)="cerrarVistaImpresion()">Cerrar</button>
+          <button type="button" class="btn btn-primary text-sm gap-1.5" (click)="ejecutarImpresionPreview()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+      <iframe
+        [id]="PRINT_PREVIEW_FRAME_ID"
+        title="Vista previa de impresión"
+        class="flex-1 w-full min-h-0 bg-white border-0"
+      ></iframe>
+    </div>
+  }
+
+  <!-- TOAST (portal global, no recortado por overflow del main) -->
   @if (toast().show) {
-    <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl animate-slide-in-r text-sm font-medium"
-      [ngClass]="toast().type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+    <div appOverlayPortal
+      class="fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl animate-slide-in-r text-sm font-medium max-w-md pointer-events-auto"
+      [ngClass]="toast().type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+      role="alert">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           [attr.d]="toast().type === 'success' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'"/>
@@ -799,6 +965,7 @@ const SECCIONES_FALLBACK = ['A', 'B', 'C', 'D'];
       {{ toast().msg }}
     </div>
   }
+
 </div>
   `
 })
@@ -809,6 +976,8 @@ export class AsignacionComponent implements OnInit, OnDestroy {
   private cargarSub?: Subscription;
 
   readonly Math = Math;
+  readonly PRINT_PREVIEW_FRAME_ID = PRINT_PREVIEW_FRAME_ID;
+  readonly gradosIncluyen = gradosIncluyen;
   readonly DOCENTES_POR_PAGINA = 10;
   readonly NIVELES: Nivel[] = ['Inicial', 'Primaria', 'Secundaria'];
   readonly TABS = [
@@ -849,6 +1018,34 @@ export class AsignacionComponent implements OnInit, OnDestroy {
   dSecciones = signal<string[]>([]);
 
   toast = signal<{ show: boolean; msg: string; type: 'success' | 'error' }>({ show: false, msg: '', type: 'success' });
+  feedback = signal<{ msg: string; type: 'success' | 'error' } | null>(null);
+  quitarTargetId = signal<number | null>(null);
+
+  printPreviewOpen = signal(false);
+  printPreviewTitle = signal('');
+
+  private printPreviewHtml = '';
+  private toastTimer?: ReturnType<typeof setTimeout>;
+  private feedbackTimer?: ReturnType<typeof setTimeout>;
+
+  quitarAsigDetalle = computed(() => {
+    const id = this.quitarTargetId();
+    if (id == null) return null;
+    const asig = this._asig().find(a => a.id === id);
+    if (!asig) return null;
+    const cur = this.curById(asig.cursoId);
+    const doc = this.docById(asig.docenteId);
+    const docente = doc
+      ? `${doc.apellidos}, ${doc.nombres}`
+      : (asig.docenteNombre || 'Docente');
+    return {
+      curso: cur?.nombre ?? `Curso #${asig.cursoId}`,
+      docente,
+      nivel: asig.nivel,
+      grado: asig.grado,
+      secciones: asig.secciones.length ? asig.secciones.join(', ') : '—',
+    };
+  });
 
   seccionesDrawer = computed(() => {
     const key = `${this.dNivel()}|${this.dGrado()}`;
@@ -888,11 +1085,16 @@ export class AsignacionComponent implements OnInit, OnDestroy {
   kpis = computed(() => {
     const asig = this._asig().filter(a => a.activo);
     const docIds = new Set(asig.map(a => a.docenteId).filter((id): id is number => id != null));
-    const curGrados = new Set(asig.map(a => `${a.cursoId}-${a.grado}`));
-    const allCurGrados = new Set(
-      this._cursos().flatMap(c => c.grados.map(g => `${c.id}-${g}`))
-    );
-    const sinDocente = allCurGrados.size - curGrados.size;
+    let totalSlots = 0;
+    let coveredSlots = 0;
+    for (const c of this._cursos()) {
+      for (const g of c.grados) {
+        for (const sec of this.seccionesGradoCob(c.nivel, g)) {
+          totalSlots++;
+          if (this.docenteEnSeccion(c.id, g, sec)) coveredSlots++;
+        }
+      }
+    }
     const totalHoras = asig.reduce((s, a) => s + a.horasSemanales, 0);
     const totalSecciones = asig.reduce((s, a) => s + a.secciones.length, 0);
     return {
@@ -900,7 +1102,7 @@ export class AsignacionComponent implements OnInit, OnDestroy {
       totalAsig: asig.length,
       totalSecciones,
       promedioHoras: docIds.size > 0 ? Math.round(totalHoras / docIds.size) : 0,
-      sinDocente: Math.max(0, sinDocente),
+      sinDocente: Math.max(0, totalSlots - coveredSlots),
     };
   });
 
@@ -964,21 +1166,24 @@ export class AsignacionComponent implements OnInit, OnDestroy {
   coberturaStats = computed(() => {
     const cursos = this.cursosCob();
     const grados = this.gradosCob();
+    const nivel = this.nivelCob();
     let total = 0;
     let cubiertos = 0;
     for (const cur of cursos) {
       for (const g of grados) {
-        if (cur.grados.includes(g)) {
-          total++;
-          if (this.getDocForCursoGrado(cur.id, g)) cubiertos++;
-        }
+        const cel = this.coberturaCelda(cur.id, g, nivel);
+        if (cel.estado === 'na') continue;
+        total += cel.total;
+        cubiertos += cel.cubiertas;
       }
     }
     return { total, cubiertos, pct: total > 0 ? Math.round((cubiertos / total) * 100) : 0 };
   });
 
   dCursosDisp = computed(() =>
-    this._cursos().filter(c => c.nivel === this.dNivel() && c.grados.includes(this.dGrado()))
+    this._cursos().filter(
+      (c) => c.nivel === this.dNivel() && gradosIncluyen(this.dGrado(), c.grados),
+    ),
   );
 
   // ── Methods ───────────────────────────────────────────────────────────
@@ -993,6 +1198,144 @@ export class AsignacionComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cargarSub?.unsubscribe();
+    clearTimeout(this.toastTimer);
+    clearTimeout(this.feedbackTimer);
+  }
+
+  imprimirCobertura(): void {
+    if (this.tab() !== 'cobertura') this.tab.set('cobertura');
+    this.abrirVistaImpresion(
+      `Cobertura ${this.nivelCob()}`,
+      this.buildCoberturaPrintBody(),
+    );
+  }
+
+  imprimirDocentes(): void {
+    if (this.tab() !== 'docentes') this.tab.set('docentes');
+    this.abrirVistaImpresion(
+      'Asignaciones por docente',
+      this.buildDocentesPrintBody(this.docentesFiltrados(), this.docenteFilterSubtitulo()),
+    );
+  }
+
+  imprimirDocenteActual(): void {
+    const doc = this.docenteDetalle();
+    if (!doc) return;
+    this.abrirVistaImpresion(
+      `Asignaciones — ${doc.apellidos}, ${doc.nombres}`,
+      this.buildDocentesPrintBody([doc], 'Detalle individual'),
+    );
+  }
+
+  abrirVistaImpresion(titulo: string, contenido: string): void {
+    this.printPreviewTitle.set(titulo);
+    this.printPreviewHtml = wrapPrintDocumentHtml(titulo, contenido);
+    this.printPreviewOpen.set(true);
+    setTimeout(() => this.syncPrintPreviewFrame(), 0);
+  }
+
+  cerrarVistaImpresion(): void {
+    this.printPreviewOpen.set(false);
+    this.printPreviewTitle.set('');
+    this.printPreviewHtml = '';
+  }
+
+  ejecutarImpresionPreview(): void {
+    const iframe = document.getElementById(PRINT_PREVIEW_FRAME_ID) as HTMLIFrameElement | null;
+    if (!iframe || !printIframe(iframe)) {
+      this.showToast('No se pudo abrir el diálogo de impresión.', 'error');
+    }
+  }
+
+  private syncPrintPreviewFrame(): void {
+    const iframe = document.getElementById(PRINT_PREVIEW_FRAME_ID) as HTMLIFrameElement | null;
+    if (!iframe || !this.printPreviewHtml) return;
+    if (!writeHtmlToIframe(iframe, this.printPreviewHtml)) {
+      this.showToast('No se pudo cargar la vista previa.', 'error');
+    }
+  }
+
+  private docenteFilterSubtitulo(): string {
+    const f = this.docenteFilter();
+    if (f === 'nombrado') return 'Filtro: Nombrados';
+    if (f === 'contratado') return 'Filtro: Contratados';
+    if (f === 'sobrecarga') return 'Filtro: Con sobrecarga';
+    return 'Todos los docentes';
+  }
+
+  private buildCoberturaPrintBody(): string {
+    const cob = this.coberturaStats();
+    const grados = this.gradosCob();
+    const nivel = this.nivelCob();
+    const fecha = new Date().toLocaleString('es-PE');
+    const headerCols = grados.map((g) => `<th>${escapeHtml(g)}</th>`).join('');
+    const rows = this.cursosCob().map((cur) => {
+      const gradeCells = grados.map((g) => {
+        const cel = this.coberturaCelda(cur.id, g, nivel);
+        if (cel.estado === 'na') return '<td>—</td>';
+        const lines = cel.secciones
+          .map((item) =>
+            `${escapeHtml(item.seccion)}: ${escapeHtml(item.docenteCompleto ?? 'Sin docente')}`,
+          )
+          .join('<br>');
+        return `<td>${lines}</td>`;
+      }).join('');
+      return `<tr>
+        <td><strong>${escapeHtml(cur.nombre)}</strong></td>
+        <td>${escapeHtml(cur.area)}</td>
+        <td style="text-align:center">${cur.horasSemanales}</td>
+        ${gradeCells}
+      </tr>`;
+    }).join('');
+
+    return `
+      <h1>Cuadro de cobertura — ${escapeHtml(nivel)}</h1>
+      <p class="meta">Año escolar ${this.anioEscolar()} · Generado: ${escapeHtml(fecha)}</p>
+      <p class="meta">Cobertura: <strong>${cob.pct}%</strong> (${cob.cubiertos} de ${cob.total} curso-grado-sección)</p>
+      <table>
+        <thead><tr><th>Curso</th><th>Área</th><th>H/s</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  private buildDocentesPrintBody(docs: Docente[], subtitulo: string): string {
+    const fecha = new Date().toLocaleString('es-PE');
+    const blocks = docs.map((doc) => {
+      const stats = this.docenteStats(doc.id);
+      const tabla = stats.asignaciones.length
+        ? `<table>
+            <thead>
+              <tr><th>Curso</th><th>Nivel</th><th>Grado</th><th>Secciones</th><th>H/sem</th></tr>
+            </thead>
+            <tbody>
+              ${stats.asignaciones.map((a) => {
+                const cur = this.curById(a.cursoId);
+                const nombre = cur?.nombre ?? `Curso #${a.cursoId}`;
+                return `<tr>
+                  <td>${escapeHtml(nombre)}</td>
+                  <td>${escapeHtml(a.nivel)}</td>
+                  <td>${escapeHtml(a.grado)}</td>
+                  <td>${escapeHtml(a.secciones.join(', '))}</td>
+                  <td style="text-align:center">${a.horasSemanales}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`
+        : '<p class="empty">Sin asignaciones activas.</p>';
+
+      return `<div class="block">
+        <h2>${escapeHtml(doc.apellidos)}, ${escapeHtml(doc.nombres)}</h2>
+        <p class="meta">DNI ${escapeHtml(doc.dni)} · ${escapeHtml(doc.especialidad)} · ${escapeHtml(doc.tipo)} · Carga: ${stats.totalHoras}h / ${doc.maxHoras}h</p>
+        ${tabla}
+      </div>`;
+    }).join('');
+
+    return `
+      <h1>Asignaciones por docente</h1>
+      <p class="meta">Año escolar ${this.anioEscolar()} · ${escapeHtml(subtitulo)} · Generado: ${escapeHtml(fecha)}</p>
+      ${blocks || '<p class="empty">No hay docentes para imprimir.</p>'}
+    `;
   }
 
   cargarDatos(): void {
@@ -1012,14 +1355,12 @@ export class AsignacionComponent implements OnInit, OnDestroy {
 
   private aplicarAsignacionLocal(saved: Asignacion, editId: number | null): void {
     this._asig.update(list => {
-      if (editId) {
-        return list.map(a => (a.id === editId ? { ...a, ...saved } : a));
+      const idxById = list.findIndex(a => a.id === saved.id);
+      if (idxById >= 0) {
+        return list.map(a => (a.id === saved.id ? { ...a, ...saved } : a));
       }
-      const idx = list.findIndex(
-        a => a.cursoId === saved.cursoId && a.grado === saved.grado && a.activo,
-      );
-      if (idx >= 0) {
-        return list.map((a, i) => (i === idx ? { ...a, ...saved } : a));
+      if (editId != null) {
+        return list.map(a => (a.id === editId ? { ...a, ...saved } : a));
       }
       return [...list, saved];
     });
@@ -1040,12 +1381,81 @@ export class AsignacionComponent implements OnInit, OnDestroy {
     return { totalHoras, asignaciones };
   }
 
-  getDocForCursoGrado(cursoId: number, grado: string): string | null {
-    const a = this._asig().find(x => x.cursoId === cursoId && x.grado === grado && x.activo);
-    if (!a) return null;
-    const d = this.docById(a.docenteId);
-    if (d) return d.apellidos.split(' ')[0];
-    return a.docenteNombre?.split(' ')[0] ?? null;
+  seccionesGradoCob(nivel: Nivel, grado: string): string[] {
+    const key = `${nivel}|${grado}`;
+    const fromSalones = this.seccionesPorGrado()[key];
+    return fromSalones?.length ? fromSalones : [...SECCIONES_FALLBACK];
+  }
+
+  coberturaCelda(cursoId: number, grado: string, nivel: Nivel): CoberturaCelda {
+    const cur = this.curById(cursoId);
+    if (!cur || !gradosIncluyen(grado, cur.grados)) {
+      return { secciones: [], cubiertas: 0, total: 0, estado: 'na' };
+    }
+
+    const secciones = this.seccionesGradoCob(nivel, grado);
+    const items: CoberturaSeccionItem[] = secciones.map((seccion) => {
+      const doc = this.docenteEnSeccion(cursoId, grado, seccion);
+      return {
+        seccion,
+        docente: doc?.corto ?? null,
+        docenteCompleto: doc?.completo ?? null,
+      };
+    });
+    const cubiertas = items.filter((i) => i.docente).length;
+    const total = items.length;
+    let estado: CoberturaEstado = 'ninguna';
+    if (cubiertas === total && total > 0) estado = 'completa';
+    else if (cubiertas > 0) estado = 'parcial';
+
+    return { secciones: items, cubiertas, total, estado };
+  }
+
+  private docenteEnSeccion(
+    cursoId: number,
+    grado: string,
+    seccion: string,
+  ): { corto: string; completo: string } | null {
+    const sec = seccion.trim().toUpperCase();
+    const asig = this._asig().find(
+      (x) =>
+        x.cursoId === cursoId &&
+        x.activo &&
+        gradosIncluyen(grado, [x.grado]) &&
+        x.secciones.some((s) => s.toUpperCase() === sec),
+    );
+    if (!asig) return null;
+
+    const doc = this.docById(asig.docenteId);
+    const completo = doc
+      ? `${doc.apellidos}, ${doc.nombres}`
+      : (asig.docenteNombre ?? 'Docente');
+    const corto = doc
+      ? doc.apellidos.split(' ')[0]
+      : (asig.docenteNombre?.split(' ')[0] ?? 'Doc.');
+
+    return { corto, completo };
+  }
+
+  findAsigForCursoGradoSeccion(
+    cursoId: number,
+    grado: string,
+    seccion: string,
+  ): Asignacion | undefined {
+    const sec = seccion.trim().toUpperCase();
+    return this._asig().find(
+      (x) =>
+        x.cursoId === cursoId &&
+        x.activo &&
+        gradosIncluyen(grado, [x.grado]) &&
+        x.secciones.some((s) => s.toUpperCase() === sec),
+    );
+  }
+
+  findAsigForCursoGrado(cursoId: number, grado: string): Asignacion | undefined {
+    return this._asig().find(
+      (x) => x.cursoId === cursoId && x.activo && gradosIncluyen(grado, [x.grado]),
+    );
   }
 
   gradosPorNivel(n: Nivel): string[] {
@@ -1103,9 +1513,20 @@ export class AsignacionComponent implements OnInit, OnDestroy {
     this.drawerOpen.set(true);
   }
   abrirDrawerParaDocente(docId: number): void { this.abrirDrawer(docId); }
-  abrirDrawerParaCurso(cursoId: number, grado: string): void {
+  abrirDrawerParaCurso(cursoId: number, grado: string, seccion?: string): void {
+    const existing = seccion
+      ? this.findAsigForCursoGradoSeccion(cursoId, grado, seccion)
+      : this.findAsigForCursoGrado(cursoId, grado);
+    if (existing) {
+      this.editarAsig(existing.id);
+      return;
+    }
     const cur = this.curById(cursoId);
-    if (cur) { this.abrirDrawer(undefined, cursoId, grado); this.dNivel.set(cur.nivel); }
+    if (cur) {
+      this.abrirDrawer(undefined, cursoId, grado);
+      this.dNivel.set(cur.nivel);
+      if (seccion) this.dSecciones.set([seccion.trim().toUpperCase()]);
+    }
   }
   editarAsig(id: number): void {
     const a = this._asig().find(x => x.id === id);
@@ -1135,9 +1556,32 @@ export class AsignacionComponent implements OnInit, OnDestroy {
   }
 
   guardarAsig(): void {
-    const cur = this.curById(this.dCursoId()!);
+    const cursoId = this.dCursoId();
     const docId = this.dDocId();
-    if (!cur || docId == null) return;
+
+    if (!cursoId) {
+      this.showToast('Seleccione un curso para continuar.', 'error');
+      return;
+    }
+    if (docId == null) {
+      this.showToast('Seleccione un docente para asignar el curso.', 'error');
+      return;
+    }
+    if (!this.dSecciones().length) {
+      this.showToast('Seleccione al menos una sección.', 'error');
+      return;
+    }
+
+    const cur = this.curById(cursoId);
+    const doc = this.docById(docId);
+    if (!cur || !doc) {
+      this.showToast('No se encontró el curso o el docente seleccionado.', 'error');
+      return;
+    }
+    if (!cur.curriculumId) {
+      this.showToast('El curso no tiene currícula asociada. Pulse Actualizar e intente de nuevo.', 'error');
+      return;
+    }
 
     const payload = {
       curriculumId: cur.curriculumId,
@@ -1146,7 +1590,7 @@ export class AsignacionComponent implements OnInit, OnDestroy {
       nivel: this.dNivel(),
       grado: this.dGrado(),
       secciones: [...this.dSecciones()],
-      horasSemanales: cur.horasSemanales,
+      horasSemanales: Math.round(cur.horasSemanales ?? 0),
     };
 
     const editId = this.editId();
@@ -1164,28 +1608,75 @@ export class AsignacionComponent implements OnInit, OnDestroy {
     req.subscribe({
       next: (saved) => {
         this.aplicarAsignacionLocal(saved, editId);
-        this.showToast(editId ? 'Asignación actualizada correctamente' : 'Asignación creada correctamente');
         this.cerrarDrawer();
+        this.showToast(this.mensajeExitoAsignacion(cur, doc, editId));
         this.cargarDatos();
       },
-      error: (err: Error) => this.showToast(err.message, 'error'),
+      error: (err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'No se pudo asignar el curso';
+        this.showToast(msg, 'error');
+      },
     });
   }
 
-  eliminarAsig(id: number): void {
+  pedirQuitarAsig(id: number): void {
+    this.quitarTargetId.set(id);
+  }
+
+  cerrarConfirmQuitar(): void {
+    if (this.svc.saving()) return;
+    this.quitarTargetId.set(null);
+  }
+
+  confirmarQuitarAsig(): void {
+    const id = this.quitarTargetId();
+    if (id == null) return;
+
+    const asig = this._asig().find(a => a.id === id);
+    const cur = asig ? this.curById(asig.cursoId) : undefined;
+
     this.svc.remove(id).subscribe({
       next: () => {
         this._asig.update(list => list.filter(a => a.id !== id));
-        this.showToast('Asignación eliminada', 'error');
+        const nombre = cur?.nombre ?? 'Curso';
+        this.quitarTargetId.set(null);
+        this.showToast(`Asignación de «${nombre}» eliminada correctamente`);
         this.cargarDatos();
       },
-      error: (err: Error) => this.showToast(err.message, 'error'),
+      error: (err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'No se pudo quitar la asignación';
+        this.showToast(msg, 'error');
+      },
     });
   }
 
+  private mensajeExitoAsignacion(cur: Curso, doc: Docente, editId: number | null): string {
+    const docente = `${doc.apellidos}, ${doc.nombres}`;
+    const grado = this.dGrado();
+    const secciones = this.dSecciones().join(', ');
+    if (editId) {
+      return `«${cur.nombre}» actualizado: ${docente} · ${grado} · sec. ${secciones}`;
+    }
+    return `«${cur.nombre}» asignado correctamente a ${docente} · ${grado} · sec. ${secciones}`;
+  }
+
   showToast(msg: string, type: 'success' | 'error' = 'success'): void {
+    clearTimeout(this.toastTimer);
+    clearTimeout(this.feedbackTimer);
+
+    this.feedback.set({ msg, type });
     this.toast.set({ show: true, msg, type });
-    setTimeout(() => this.toast.set({ show: false, msg: '', type: 'success' }), 3000);
+
+    this.feedbackTimer = setTimeout(() => this.feedback.set(null), 8000);
+    this.toastTimer = setTimeout(
+      () => this.toast.set({ show: false, msg: '', type: 'success' }),
+      5000,
+    );
+  }
+
+  cerrarFeedback(): void {
+    clearTimeout(this.feedbackTimer);
+    this.feedback.set(null);
   }
 }
 

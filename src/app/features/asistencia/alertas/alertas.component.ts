@@ -3,13 +3,15 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 import { InstitucionalService } from '../../administracion/institucional/institucional.service';
 import { Nivel } from '../../administracion/institucional/institucional.model';
 import { AlertasService } from './alertas.service';
+import { mesActualIso } from '../control/control.service';
 import {
   AlertaAusentismo,
   AlertSettings,
-  MESES_ALERTAS,
+  AlertasResumen,
   NivelAlerta,
 } from './alertas.model';
 
@@ -24,6 +26,12 @@ import {
           <h2 class="text-2xl font-bold text-gray-900">Alertas de Ausentismo</h2>
           <p class="text-sm text-gray-400 mt-0.5">
             Monitoreo de alumnos que superan el umbral de inasistencias
+            @if (mesLabel()) {
+              · <span class="text-gray-500">{{ mesLabel() }}</span>
+            }
+          </p>
+          <p class="text-xs text-gray-400 mt-1">
+            Basado en faltas injustificadas (estado F) del registro diario en base de datos.
           </p>
         </div>
         <button class="btn btn-secondary btn-sm" (click)="cargar()">
@@ -111,16 +119,14 @@ import {
           </div>
           <div>
             <label class="form-label mb-1 block">Mes</label>
-            <select class="form-select" [ngModel]="filtro().mes" (ngModelChange)="setFiltro('mes', $event)">
-              @for (m of meses; track m.value) {
-                <option [value]="m.value">{{ m.label }}</option>
-              }
-            </select>
+            <input type="month" class="form-input"
+              [ngModel]="filtro().mes" (ngModelChange)="setFiltro('mes', $event)">
           </div>
           <div>
-            <label class="form-label mb-1 block">Severidad</label>
+            <label class="form-label mb-1 block">Vista</label>
             <select class="form-select" [ngModel]="filtro().severidad" (ngModelChange)="setFiltro('severidad', $event)">
-              <option value="todos">Todas</option>
+              <option value="con_faltas">Con faltas en BD</option>
+              <option value="todos">Solo alertas (umbral)</option>
               <option value="alerta">Alerta temprana</option>
               <option value="critico">Críticas</option>
             </select>
@@ -172,6 +178,11 @@ import {
                     </td>
                     <td class="text-center">
                       <span class="font-bold text-red-600 text-lg">{{ a.faltasInjustificadas }}</span>
+                      @if (a.fechasInasistencia?.length) {
+                        <div class="text-[10px] text-gray-400 mt-0.5" [title]="fechasInasistenciaLabel(a)">
+                          {{ a.fechasInasistencia!.length }} en BD
+                        </div>
+                      }
                     </td>
                     <td class="text-center">
                       <span class="font-bold" [ngClass]="a.diasConsecutivos > (settings()?.diasAlertaAusentismo ?? 2) ? 'text-amber-600' : 'text-gray-600'">
@@ -185,9 +196,17 @@ import {
                         <a routerLink="/asistencia/justificaciones" class="btn-icon text-blue-500 hover:bg-blue-50" title="Justificar">
                           <span class="icon icon-sm">fact_check</span>
                         </a>
-                        <button class="btn-icon text-amber-500 hover:bg-amber-50" title="Notificar apoderado"
+                        <button type="button"
+                          class="inline-flex items-center justify-center p-1.5 rounded-lg border-0 cursor-pointer transition-colors"
+                          [ngClass]="a.apoderadoNotificado
+                            ? 'bg-emerald-50 hover:bg-emerald-100 ring-1 ring-emerald-200/80'
+                            : 'bg-transparent hover:bg-amber-50'"
+                          [title]="notificarTitle(a)"
                           (click)="notificar(a)">
-                          <span class="icon icon-sm">notifications</span>
+                          <span class="icon icon-sm transition-colors"
+                            [ngClass]="a.apoderadoNotificado ? 'text-emerald-600' : 'text-amber-500'">
+                            {{ a.apoderadoNotificado ? 'notifications_active' : 'notifications' }}
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -195,8 +214,21 @@ import {
                 } @empty {
                   <tr>
                     <td colspan="8" class="py-12 text-center">
-                      <span class="icon icon-2xl text-green-200 block mb-2">verified</span>
-                      <p class="text-gray-400 text-sm">No hay alertas de ausentismo con los filtros actuales</p>
+                      @if (resumen()?.totalRegistrosAsistencia === 0) {
+                        <span class="icon icon-2xl text-gray-200 block mb-2">event_busy</span>
+                        <p class="text-gray-500 text-sm font-medium">No hay registros de asistencia en este mes</p>
+                        <p class="text-gray-400 text-xs mt-2 max-w-md mx-auto">
+                          Registre faltas en el control diario o cargue datos demo con
+                          <code class="text-[11px] bg-gray-100 px-1 rounded">npm run db:asistencia-data</code>
+                        </p>
+                      } @else if ((resumen()?.alumnosConFaltasInjustificadas ?? 0) === 0) {
+                        <span class="icon icon-2xl text-green-200 block mb-2">verified</span>
+                        <p class="text-gray-400 text-sm">No hay faltas injustificadas registradas en BD para este mes</p>
+                      } @else {
+                        <span class="icon icon-2xl text-amber-200 block mb-2">info</span>
+                        <p class="text-gray-500 text-sm">Hay {{ resumen()?.alumnosConFaltasInjustificadas }} alumno(s) con faltas en BD</p>
+                        <p class="text-gray-400 text-xs mt-1">Cambie la vista a «Con faltas en BD» o baje el umbral de alerta</p>
+                      }
                     </td>
                   </tr>
                 }
@@ -233,10 +265,12 @@ import {
 })
 export class AlertasComponent implements OnInit {
   private readonly layout = inject(LayoutService);
+  private readonly auth = inject(AuthService);
   readonly svc = inject(AlertasService);
   private readonly institucional = inject(InstitucionalService);
 
-  readonly meses = MESES_ALERTAS;
+  readonly mesLabel = signal<string | null>(null);
+  readonly resumen = signal<AlertasResumen | null>(null);
 
   readonly settings = signal<AlertSettings | null>(null);
   readonly errorSettings = signal('');
@@ -251,9 +285,9 @@ export class AlertasComponent implements OnInit {
   readonly filtro = signal({
     nivel: '',
     grado: '',
-    mes: '2026-06',
+    mes: mesActualIso(),
     busqueda: '',
-    severidad: 'todos',
+    severidad: 'con_faltas',
   });
 
   readonly gradosDisponibles = computed(() => {
@@ -264,8 +298,15 @@ export class AlertasComponent implements OnInit {
   readonly alertasFiltradas = computed(() => {
     let list = this._alertas();
     const sev = this.filtro().severidad;
-    if (sev === 'alerta') list = list.filter((a) => a.nivelAlerta === 'alerta');
-    if (sev === 'critico') list = list.filter((a) => a.nivelAlerta === 'critico');
+    if (sev === 'con_faltas') {
+      // ya viene conFaltas desde el backend
+    } else if (sev === 'todos') {
+      list = list.filter((a) => a.nivelAlerta === 'alerta' || a.nivelAlerta === 'critico');
+    } else if (sev === 'alerta') {
+      list = list.filter((a) => a.nivelAlerta === 'alerta');
+    } else if (sev === 'critico') {
+      list = list.filter((a) => a.nivelAlerta === 'critico');
+    }
 
     const q = this.filtro().busqueda.toLowerCase().trim();
     if (q) {
@@ -277,10 +318,20 @@ export class AlertasComponent implements OnInit {
   });
 
   readonly kpis = computed(() => {
-    const alertas = this._alertas();
+    const res = this.resumen();
+    const alertas = this._alertas().filter(
+      (a) => a.nivelAlerta === 'alerta' || a.nivelAlerta === 'critico',
+    );
     const criticos = alertas.filter((a) => a.nivelAlerta === 'critico');
     const tempranas = alertas.filter((a) => a.nivelAlerta === 'alerta');
     return [
+      {
+        label: 'Con faltas (BD)',
+        value: res?.alumnosConFaltasInjustificadas ?? 0,
+        icon: 'event_busy',
+        bg: 'bg-gray-100',
+        color: 'text-gray-600',
+      },
       {
         label: 'Total alertas',
         value: alertas.length,
@@ -306,13 +357,6 @@ export class AlertasComponent implements OnInit {
         text: 'text-red-600',
         border: 'border-l-4 border-red-400',
       },
-      {
-        label: 'Faltas acumuladas',
-        value: alertas.reduce((s, a) => s + a.faltasInjustificadas, 0),
-        icon: 'event_busy',
-        bg: 'bg-gray-100',
-        color: 'text-gray-600',
-      },
     ];
   });
 
@@ -335,9 +379,11 @@ export class AlertasComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this._alertas.set(res.alerts);
+          this._alertas.set(res.conFaltas ?? res.alerts);
           this.settings.set(res.settings);
           this.settingsForm = { ...res.settings };
+          this.mesLabel.set(res.mesLabel);
+          this.resumen.set(res.resumen ?? null);
         },
         error: () => this.mostrarNotificacion('No se pudieron cargar las alertas', 'error'),
       });
@@ -379,17 +425,75 @@ export class AlertasComponent implements OnInit {
   }
 
   notificar(alerta: AlertaAusentismo): void {
-    this.mostrarNotificacion(
-      `Notificación enviada al apoderado de ${alerta.estudiante.split(',')[0]}`,
-    );
+    const mes = this.filtro().mes;
+    if (!mes) {
+      this.mostrarNotificacion('Seleccione un mes para registrar la notificación', 'error');
+      return;
+    }
+
+    this.svc
+      .notifyApoderado({
+        studentId: alerta.studentId,
+        mes,
+        notificadoPor: this.auth.nombreCompleto() || 'Administración',
+      })
+      .subscribe({
+        next: (res) => {
+          this._alertas.update((list) =>
+            list.map((a) =>
+              a.studentId === alerta.studentId
+                ? {
+                    ...a,
+                    apoderadoNotificado: true,
+                    notificadoAt: res.notificadoAt,
+                    notificadoPor: res.notificadoPor,
+                  }
+                : a,
+            ),
+          );
+          const nombre = alerta.estudiante.split(',')[0];
+          if (res.correoEnviado && res.correoDestino) {
+            this.mostrarNotificacion(
+              `Apoderado notificado — ${nombre}. Correo enviado a ${res.correoDestino}`,
+            );
+          } else if (res.correoSimulado) {
+            this.mostrarNotificacion(
+              `Registro guardado — ${nombre}. Correo simulado (configure MAIL_PASS en .env)`,
+              'error',
+            );
+          } else if (!res.correoDestino) {
+            this.mostrarNotificacion(
+              `Registro guardado — ${nombre}. Sin correo de apoderado en ficha del alumno`,
+              'error',
+            );
+          } else {
+            this.mostrarNotificacion(`Apoderado notificado — ${nombre}`);
+          }
+        },
+        error: () =>
+          this.mostrarNotificacion('No se pudo registrar la notificación', 'error'),
+      });
+  }
+
+  notificarTitle(a: AlertaAusentismo): string {
+    if (a.apoderadoNotificado) {
+      const quien = a.notificadoPor ? ` por ${a.notificadoPor}` : '';
+      const cuando = a.notificadoAt ? ` · ${a.notificadoAt}` : '';
+      return `Apoderado notificado${quien}${cuando}`;
+    }
+    return 'Notificar apoderado';
   }
 
   severidadBadge(n: NivelAlerta): string {
-    return n === 'critico' ? 'badge-red' : 'badge-yellow';
+    if (n === 'critico') return 'badge-red';
+    if (n === 'alerta') return 'badge-yellow';
+    return 'badge-gray';
   }
 
   severidadLabel(n: NivelAlerta): string {
-    return n === 'critico' ? 'Crítica' : 'Alerta';
+    if (n === 'critico') return 'Crítica';
+    if (n === 'alerta') return 'Alerta';
+    return 'Con falta';
   }
 
   nivelBadge(nivel: string): string {
@@ -398,6 +502,15 @@ export class AlertasComponent implements OnInit {
       Primaria: 'badge-blue',
       Secundaria: 'badge-indigo',
     }[nivel] ?? 'badge-gray';
+  }
+
+  fechasInasistenciaLabel(a: AlertaAusentismo): string {
+    return (a.fechasInasistencia ?? [])
+      .map((f) => {
+        const [y, m, d] = f.split('-');
+        return `${d}/${m}/${y}`;
+      })
+      .join(', ');
   }
 
   private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' = 'success'): void {

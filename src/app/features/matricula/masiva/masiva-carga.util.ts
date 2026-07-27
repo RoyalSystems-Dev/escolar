@@ -7,20 +7,30 @@ import { BulkMatriculaPayload, FilaCargaMatricula, NivelMatricula } from './masi
 
 export const PLANTILLA_HEADERS = [
   'nombres',
-  'apellidos',
+  'apellido_paterno',
+  'apellido_materno',
+  'tipo_documento',
   'dni',
   'email',
   'sexo',
   'fecha_nac',
+  'direccion',
+  'distrito',
+  'provincia',
+  'departamento',
+  'telefono_emergencia',
   'nivel',
   'grado',
   'seccion',
   'anio_ingreso',
   'apoderado_nombres',
-  'apoderado_apellidos',
+  'apoderado_apellido_paterno',
+  'apoderado_apellido_materno',
+  'apoderado_tipo_documento',
   'apoderado_dni',
   'apoderado_telefono',
   'apoderado_email',
+  'apoderado_parentesco',
 ] as const;
 
 const PLANTILLA_ALUMNOS = 10;
@@ -73,6 +83,7 @@ function generarFilasEjemploPlantilla(cantidad: number, dniBase: number): string
     },
   ];
   const secciones = ['A', 'B', 'C'];
+  const distritos = ['Miraflores', 'San Isidro', 'Surco', 'San Borja', 'La Molina'];
 
   const filas: string[][] = [];
   for (let i = 0; i < cantidad; i++) {
@@ -80,31 +91,40 @@ function generarFilasEjemploPlantilla(cantidad: number, dniBase: number): string
     const nombre = esF ? nombresF[i % nombresF.length] : nombresM[i % nombresM.length];
     const ape1 = apellidos[i % apellidos.length];
     const ape2 = apellidos2[i % apellidos2.length];
-    const apellidosAlumno = `${ape1} ${ape2}`;
     const cfg = niveles[i % niveles.length];
     const grado = cfg.grados[i % cfg.grados.length];
     const seccion = secciones[i % secciones.length];
     const dni = String(dniBase + i).padStart(8, '0');
     const apoDni = String(90220001 + i).padStart(8, '0');
     const apoNombre = esF ? 'Carlos' : 'Maria';
-    const apoApellido = `${ape1} ${ape2.split(' ')[0]}`;
+    const distrito = distritos[i % distritos.length];
 
     filas.push([
       nombre,
-      apellidosAlumno,
+      ape1,
+      ape2,
+      'DNI',
       dni,
       '',
       esF ? 'F' : 'M',
       cfg.fechas[i % cfg.fechas.length],
+      `Av. Los Pinos ${120 + i}, ${distrito}`,
+      distrito,
+      'Lima',
+      'Lima',
+      '',
       cfg.nivel,
       grado,
       seccion,
       '2026',
       apoNombre,
-      apoApellido,
+      ape1,
+      ape2.split(' ')[0],
+      'DNI',
       apoDni,
       `987${String(100000 + i).slice(-6)}`,
       `apoderado.${dni}@email.com`,
+      esF ? 'padre' : 'madre',
     ]);
   }
   return filas;
@@ -112,23 +132,9 @@ function generarFilasEjemploPlantilla(cantidad: number, dniBase: number): string
 
 function escribirExcelMatricula(sheetData: string[][], filename: string): void {
   const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-  worksheet['!cols'] = [
-    { wch: 14 },
-    { wch: 22 },
-    { wch: 10 },
-    { wch: 28 },
-    { wch: 6 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 8 },
-    { wch: 8 },
-    { wch: 12 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 28 },
-  ];
+  worksheet['!cols'] = PLANTILLA_HEADERS.map((h) => ({
+    wch: Math.max(12, Math.min(28, h.length + 4)),
+  }));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Matriculas');
   XLSX.writeFile(workbook, filename);
@@ -165,11 +171,47 @@ function normalizeGrado(value: string): string {
   return value.replace(/°/g, '').trim();
 }
 
+function resolveApellidos(
+  apellidoPaterno: string,
+  apellidoMaterno: string,
+  apellidosLegacy: string,
+): { apellidoPaterno: string; apellidoMaterno: string; apellidos: string } {
+  const paterno = apellidoPaterno.trim();
+  const materno = apellidoMaterno.trim();
+  if (paterno || materno) {
+    return {
+      apellidoPaterno: paterno,
+      apellidoMaterno: materno,
+      apellidos: [paterno, materno].filter(Boolean).join(' '),
+    };
+  }
+  const legacy = apellidosLegacy.trim();
+  if (!legacy) {
+    return { apellidoPaterno: '', apellidoMaterno: '', apellidos: '' };
+  }
+  const parts = legacy.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return {
+      apellidoPaterno: parts[0],
+      apellidoMaterno: parts.slice(1).join(' '),
+      apellidos: legacy,
+    };
+  }
+  return { apellidoPaterno: legacy, apellidoMaterno: '', apellidos: legacy };
+}
+
 function validarColumnas(headers: string[]): void {
-  const required = ['nombres', 'apellidos', 'dni', 'nivel', 'grado', 'seccion'];
+  const required = ['nombres', 'dni', 'nivel', 'grado', 'seccion', 'direccion'];
   const missing = required.filter((h) => !headers.includes(h));
   if (missing.length) {
     throw new Error(`La plantilla no tiene las columnas requeridas: ${missing.join(', ')}`);
+  }
+  const tieneApellidosSeparados =
+    headers.includes('apellido_paterno') && headers.includes('apellido_materno');
+  if (!tieneApellidosSeparados && !headers.includes('apellidos')) {
+    throw new Error(
+      'La plantilla debe incluir apellido_paterno y apellido_materno, o la columna apellidos',
+    );
   }
 }
 
@@ -179,8 +221,12 @@ function validarFila(
   const errores: string[] = [];
 
   if (!data.nombres.trim()) errores.push('Nombres es obligatorio');
-  if (!data.apellidos.trim()) errores.push('Apellidos es obligatorio');
-  if (!/^\d{8}$/.test(data.dni)) errores.push('DNI debe tener 8 digitos');
+  if (!data.apellidoPaterno?.trim()) errores.push('Apellido paterno es obligatorio');
+  if (!data.apellidoMaterno?.trim()) errores.push('Apellido materno es obligatorio');
+  if (!/^\d{8}$/.test(data.dni) && (data.tipoDocumento ?? 'DNI') === 'DNI') {
+    errores.push('DNI debe tener 8 digitos');
+  }
+  if (!data.direccion?.trim()) errores.push('Direccion es obligatoria');
   if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
     errores.push('Email invalido');
   }
@@ -209,39 +255,61 @@ function validarFila(
 
 function mapRecord(fila: number, data: Record<string, string>): FilaCargaMatricula {
   const nombres = data['nombres'] ?? '';
-  const apellidos = data['apellidos'] ?? '';
   const dni = data['dni'] ?? '';
   const nivel = normalizeNivel(data['nivel'] ?? '');
   const sexoRaw = normalizeSexo(data['sexo'] ?? '');
 
+  const apellidosRes = resolveApellidos(
+    data['apellido_paterno'] ?? '',
+    data['apellido_materno'] ?? '',
+    data['apellidos'] ?? '',
+  );
+
   const apoderadoFull = data['apoderado_nombres']?.trim() ?? '';
   let apoderadoNombres = apoderadoFull;
-  let apoderadoApellidos = data['apoderado_apellidos']?.trim() ?? '';
-  if (apoderadoFull && !apoderadoApellidos) {
+  const apoderadoApellidosRes = resolveApellidos(
+    data['apoderado_apellido_paterno'] ?? '',
+    data['apoderado_apellido_materno'] ?? '',
+    data['apoderado_apellidos'] ?? '',
+  );
+  if (apoderadoFull && !apoderadoApellidosRes.apellidos) {
     const split = splitNombreCompleto(apoderadoFull);
     apoderadoNombres = split.nombres;
-    apoderadoApellidos = split.apellidos;
   }
 
   return validarFila({
     fila,
     nombres: nombres.trim(),
-    apellidos: apellidos.trim(),
+    apellidos: apellidosRes.apellidos,
+    apellidoPaterno: apellidosRes.apellidoPaterno,
+    apellidoMaterno: apellidosRes.apellidoMaterno,
+    tipoDocumento: (data['tipo_documento']?.trim() || 'DNI') as BulkMatriculaPayload['tipoDocumento'],
     dni: dni.trim(),
     email:
       (data['email'] ?? '').trim() ||
-      (dni ? buildEstudianteEmail(nombres, apellidos, dni) : ''),
+      (dni ? buildEstudianteEmail(nombres, apellidosRes.apellidos, dni) : ''),
     sexo: sexoRaw || undefined,
     fechaNac: data['fecha_nac']?.trim() || undefined,
+    direccion: (data['direccion'] ?? '').trim(),
+    distrito: data['distrito']?.trim() || undefined,
+    provincia: data['provincia']?.trim() || undefined,
+    departamento: data['departamento']?.trim() || undefined,
+    telefonoEmergencia: data['telefono_emergencia']?.trim() || undefined,
     nivel: nivel || ('' as NivelMatricula),
     grado: normalizeGrado(data['grado'] ?? ''),
     seccion: (data['seccion'] ?? 'A').trim().toUpperCase(),
     anioIngreso: data['anio_ingreso']?.trim() || String(new Date().getFullYear()),
     apoderadoNombres: apoderadoNombres || undefined,
-    apoderadoApellidos: apoderadoApellidos || undefined,
+    apoderadoApellidos: apoderadoApellidosRes.apellidos || undefined,
+    apoderadoApellidoPaterno: apoderadoApellidosRes.apellidoPaterno || undefined,
+    apoderadoApellidoMaterno: apoderadoApellidosRes.apellidoMaterno || undefined,
+    apoderadoTipoDocumento: (data['apoderado_tipo_documento']?.trim() ||
+      undefined) as BulkMatriculaPayload['apoderadoTipoDocumento'],
     apoderadoDni: data['apoderado_dni']?.trim() || undefined,
     apoderadoTelefono: data['apoderado_telefono']?.trim() || undefined,
     apoderadoEmail: data['apoderado_email']?.trim() || undefined,
+    apoderadoParentesco: (data['apoderado_parentesco']?.trim().toLowerCase() ||
+      undefined) as BulkMatriculaPayload['apoderadoParentesco'],
   });
 }
 

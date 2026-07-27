@@ -12,6 +12,7 @@ export interface EstudianteMatricula extends ApiStudent {
   nombres: string;
   apellidos: string;
   dni: string;
+  tipoDocumento: string;
 }
 
 export interface OcupacionSeccion {
@@ -46,6 +47,8 @@ export interface HistorialCambioSeccion {
   id: number;
   studentId: number;
   estudiante: string;
+  dni: string;
+  tipoDocumento: string;
   nivel: string;
   grado: string;
   seccionAnterior: string;

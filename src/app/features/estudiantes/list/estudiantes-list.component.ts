@@ -994,10 +994,18 @@ export class EstudiantesListComponent implements OnInit {
     const ini = Math.max(1, actual - 2); const fin = Math.min(total, actual + 2);
     return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
   });
-  readonly totalEstudiantes  = computed(() => this.expedientesSvc.estudiantes().length);
-  readonly estudiantesActivos = computed(() => this.expedientesSvc.estudiantes().filter(e => e.estado === 'activo').length);
-  readonly estudiantesMujeres = computed(() => this.expedientesSvc.estudiantes().filter(e => e.sexo === 'F').length);
-  readonly estudiantesVarones = computed(() => this.expedientesSvc.estudiantes().filter(e => e.sexo === 'M').length);
+  readonly totalEstudiantes = computed(
+    () => this.expedientesSvc.stats()?.total ?? this.expedientesSvc.estudiantes().length,
+  );
+  readonly estudiantesActivos = computed(
+    () => this.expedientesSvc.stats()?.activos ?? this.expedientesSvc.estudiantes().filter(e => e.estado === 'activo').length,
+  );
+  readonly estudiantesMujeres = computed(
+    () => this.expedientesSvc.stats()?.mujeres ?? this.expedientesSvc.estudiantes().filter(e => e.sexo === 'F').length,
+  );
+  readonly estudiantesVarones = computed(
+    () => this.expedientesSvc.stats()?.varones ?? this.expedientesSvc.estudiantes().filter(e => e.sexo === 'M').length,
+  );
 
   ngOnInit(): void {
     this.layout.setTitle('Gestion de Estudiantes');

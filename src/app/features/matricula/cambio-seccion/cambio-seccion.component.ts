@@ -176,10 +176,13 @@ function gradoApiParam(value: string): string {
                   <td colspan="7" class="py-12 text-center text-gray-400">Cargando estudiantes...</td>
                 </tr>
               } @else {
-                @for (e of filtrados(); track e.id) {
+                @for (e of estudiantesPaginados(); track e.id) {
                   <tr class="hover:bg-gray-50">
                     <td>
                       <div class="font-medium text-gray-900">{{ e.apellidos }}, {{ e.nombres }}</div>
+                      <div class="text-xs text-gray-400 font-mono mt-0.5">
+                        {{ labelDocumentoEstudiante(e) }}: {{ e.dni || '—' }}
+                      </div>
                     </td>
                     <td class="font-mono text-xs text-gray-500">{{ e.codigo }}</td>
                     <td class="font-mono text-sm text-gray-600">{{ e.dni || '—' }}</td>
@@ -211,6 +214,29 @@ function gradoApiParam(value: string): string {
               }
             </tbody>
           </table>
+          @if (!svc.loading() && totalEstudiantesFiltrados() > 0) {
+            <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+              <span class="text-xs text-gray-500">
+                {{ inicioEstudiantes() + 1 }}–{{ finEstudiantes() }} de {{ totalEstudiantesFiltrados() }}
+                · pagina {{ paginaEstudiantes() }} de {{ totalPaginasEstudiantes() }}
+              </span>
+              @if (totalEstudiantesFiltrados() > POR_PAGINA) {
+                <div class="flex items-center gap-1">
+                  <button class="btn-icon" [disabled]="paginaEstudiantes() === 1" (click)="paginaEstudiantes.update(p => p - 1)">
+                    <span class="icon icon-sm">chevron_left</span>
+                  </button>
+                  @for (p of paginasEstudiantes(); track p) {
+                    <button class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
+                      [ngClass]="p === paginaEstudiantes() ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                      (click)="paginaEstudiantes.set(p)">{{ p }}</button>
+                  }
+                  <button class="btn-icon" [disabled]="paginaEstudiantes() === totalPaginasEstudiantes()" (click)="paginaEstudiantes.update(p => p + 1)">
+                    <span class="icon icon-sm">chevron_right</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 
@@ -221,6 +247,7 @@ function gradoApiParam(value: string): string {
               <tr>
                 <th>Fecha</th>
                 <th>Estudiante</th>
+                <th>DNI</th>
                 <th>Nivel / Grado</th>
                 <th>Cambio</th>
                 <th>Motivo</th>
@@ -231,12 +258,13 @@ function gradoApiParam(value: string): string {
             </thead>
             <tbody>
               @if (cargandoHistorial()) {
-                <tr><td colspan="8" class="py-10 text-center text-gray-400">Cargando historial...</td></tr>
+                <tr><td colspan="9" class="py-10 text-center text-gray-400">Cargando historial...</td></tr>
               } @else {
-                @for (h of historial(); track h.id) {
+                @for (h of historialPaginado(); track h.id) {
                   <tr>
                     <td class="text-xs text-gray-500">{{ h.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
                     <td>{{ h.estudiante }}</td>
+                    <td class="font-mono text-xs text-gray-600">{{ h.dni || '—' }}</td>
                     <td>{{ h.nivel }} · {{ h.grado }}</td>
                     <td>
                       <span class="badge badge-gray">{{ h.seccionAnterior }}</span>
@@ -251,11 +279,34 @@ function gradoApiParam(value: string): string {
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="8" class="py-10 text-center text-gray-400">Sin cambios registrados</td></tr>
+                  <tr><td colspan="9" class="py-10 text-center text-gray-400">Sin cambios registrados</td></tr>
                 }
               }
             </tbody>
           </table>
+          @if (!cargandoHistorial() && totalHistorial() > 0) {
+            <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+              <span class="text-xs text-gray-500">
+                {{ inicioHistorial() + 1 }}–{{ finHistorial() }} de {{ totalHistorial() }}
+                · pagina {{ paginaHistorial() }} de {{ totalPaginasHistorial() }}
+              </span>
+              @if (totalHistorial() > POR_PAGINA) {
+                <div class="flex items-center gap-1">
+                  <button class="btn-icon" [disabled]="paginaHistorial() === 1" (click)="paginaHistorial.update(p => p - 1)">
+                    <span class="icon icon-sm">chevron_left</span>
+                  </button>
+                  @for (p of paginasHistorial(); track p) {
+                    <button class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
+                      [ngClass]="p === paginaHistorial() ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                      (click)="paginaHistorial.set(p)">{{ p }}</button>
+                  }
+                  <button class="btn-icon" [disabled]="paginaHistorial() === totalPaginasHistorial()" (click)="paginaHistorial.update(p => p + 1)">
+                    <span class="icon icon-sm">chevron_right</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
     </div>
@@ -276,11 +327,23 @@ function gradoApiParam(value: string): string {
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-          <div class="card p-4 bg-gray-50">
-            <p class="text-xs text-gray-400">Ubicacion actual</p>
-            <p class="font-semibold text-gray-800">
-              {{ seleccionado()?.nivel }} · {{ seleccionado()?.grado }} · Seccion {{ seleccionado()?.seccion }}
-            </p>
+          <div class="card p-4 bg-gray-50 space-y-2">
+            <div>
+              <p class="text-xs text-gray-400">Ubicacion actual</p>
+              <p class="font-semibold text-gray-800">
+                {{ seleccionado()?.nivel }} · {{ seleccionado()?.grado }} · Seccion {{ seleccionado()?.seccion }}
+              </p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p class="text-xs text-gray-400">Codigo</p>
+                <p class="font-mono font-medium text-gray-800">{{ seleccionado()?.codigo || '—' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">{{ labelDocumentoEstudiante(seleccionado()!) }}</p>
+                <p class="font-mono font-medium text-gray-800">{{ seleccionado()?.dni || '—' }}</p>
+              </div>
+            </div>
           </div>
 
           @if (cargandoOcupacion()) {
@@ -470,7 +533,10 @@ export class CambioSeccionComponent implements OnInit {
   readonly motivos = MOTIVOS_CAMBIO;
   readonly cargosAutorizadores = CARGOS_AUTORIZADORES;
   readonly anioEscolar = 2026;
+  readonly POR_PAGINA = 10;
   readonly tab = signal<'estudiantes' | 'historial'>('estudiantes');
+  readonly paginaEstudiantes = signal(1);
+  readonly paginaHistorial = signal(1);
   readonly drawerAbierto = signal(false);
   readonly cargandoOcupacion = signal(false);
   readonly cargandoOcupacionLista = signal(false);
@@ -563,6 +629,44 @@ export class CambioSeccionComponent implements OnInit {
     });
   });
 
+  readonly totalEstudiantesFiltrados = computed(() => this.filtrados().length);
+  readonly totalPaginasEstudiantes = computed(() =>
+    Math.max(1, Math.ceil(this.totalEstudiantesFiltrados() / this.POR_PAGINA)),
+  );
+  readonly inicioEstudiantes = computed(() => (this.paginaEstudiantes() - 1) * this.POR_PAGINA);
+  readonly finEstudiantes = computed(() =>
+    Math.min(this.inicioEstudiantes() + this.POR_PAGINA, this.totalEstudiantesFiltrados()),
+  );
+  readonly estudiantesPaginados = computed(() =>
+    this.filtrados().slice(this.inicioEstudiantes(), this.finEstudiantes()),
+  );
+  readonly paginasEstudiantes = computed(() => {
+    const total = this.totalPaginasEstudiantes();
+    const actual = this.paginaEstudiantes();
+    const ini = Math.max(1, actual - 2);
+    const fin = Math.min(total, actual + 2);
+    return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
+  });
+
+  readonly totalHistorial = computed(() => this.historial().length);
+  readonly totalPaginasHistorial = computed(() =>
+    Math.max(1, Math.ceil(this.totalHistorial() / this.POR_PAGINA)),
+  );
+  readonly inicioHistorial = computed(() => (this.paginaHistorial() - 1) * this.POR_PAGINA);
+  readonly finHistorial = computed(() =>
+    Math.min(this.inicioHistorial() + this.POR_PAGINA, this.totalHistorial()),
+  );
+  readonly historialPaginado = computed(() =>
+    this.historial().slice(this.inicioHistorial(), this.finHistorial()),
+  );
+  readonly paginasHistorial = computed(() => {
+    const total = this.totalPaginasHistorial();
+    const actual = this.paginaHistorial();
+    const ini = Math.max(1, actual - 2);
+    const fin = Math.min(total, actual + 2);
+    return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
+  });
+
   readonly kpis = computed(() => [
     {
       label: 'Pendientes de cambio',
@@ -617,6 +721,10 @@ export class CambioSeccionComponent implements OnInit {
       if (campo === 'grado') next.seccion = '';
       return next;
     });
+    this.paginaEstudiantes.set(1);
+    if (campo === 'nivel' || campo === 'grado') {
+      this.paginaHistorial.set(1);
+    }
     if (campo === 'nivel' || campo === 'grado') {
       this.cargarOcupacion();
       this.cargarHistorial();
@@ -747,6 +855,10 @@ export class CambioSeccionComponent implements OnInit {
     return (this.motivos.find((m) => m.value === value)?.label ?? value) || '—';
   }
 
+  labelDocumentoEstudiante(e: EstudianteMatricula): string {
+    return e.tipoDocumento === 'DNI' || !e.tipoDocumento ? 'DNI' : e.tipoDocumento;
+  }
+
   private cargarEstudiantes(): void {
     const { nivel, grado } = this.filtro();
     this.svc
@@ -779,6 +891,7 @@ export class CambioSeccionComponent implements OnInit {
       nombres,
       apellidos,
       dni: row.dni?.trim() || '',
+      tipoDocumento: row.tipoDocumento?.trim() || 'DNI',
       email: row.email ?? '',
       nivel: row.nivel ?? '',
       grado: row.grado ?? '',
@@ -794,6 +907,7 @@ export class CambioSeccionComponent implements OnInit {
     this.svc.loadHistory({ nivel: nivel || undefined, grado: grado || undefined }).subscribe({
       next: (rows) => {
         this._historial.set(rows);
+        this.paginaHistorial.set(1);
         this.cargandoHistorial.set(false);
       },
       error: () => {

@@ -56,11 +56,22 @@ export class JustificacionesPadreService {
   ): Observable<JustificacionItem> {
     this.saving.set(true);
     const params = new HttpParams().set('email', this.parentEmail());
+    const form = new FormData();
+    form.append('cantidad', String(payload.cantidad));
+    form.append('motivo', payload.motivo);
+    if (payload.observacion) form.append('observacion', payload.observacion);
+    if (payload.mes) form.append('mes', payload.mes);
+    if (payload.attendanceIds?.length) {
+      form.append('attendanceIds', JSON.stringify(payload.attendanceIds));
+    }
+    for (const file of payload.adjuntos ?? []) {
+      form.append('adjuntos', file, file.name);
+    }
 
     return this.http
       .post<JustificacionItem>(
         `${this.base}/children/${studentId}/justifications`,
-        payload,
+        form,
         { params },
       )
       .pipe(

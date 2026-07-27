@@ -60,4 +60,10 @@ export const MAESTROS_NAV: MaestroNavItem[] = [
     route: 'formulas-evaluacion',
     description: 'Estructura ponderada de calificaciones por nivel/curso',
   },
+  {
+    label: 'Historial Académico',
+    icon: 'history_edu',
+    route: '/matricula/historial-academico',
+    description: 'Carga masiva de trayectoria escolar por alumno y año',
+  },
 ];

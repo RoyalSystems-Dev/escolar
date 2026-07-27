@@ -1,12 +1,16 @@
-﻿import { Component, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgFor, NgClass, DecimalPipe, PercentPipe } from '@angular/common';
+import { NgClass, DecimalPipe, PercentPipe } from '@angular/common';
 import { LayoutService } from '../../core/layout/services/layout.service';
 import { AuthService } from '../../core/auth/services/auth.service';
+import { DashboardService } from './dashboard.service';
 
 interface StatCard {
-  label: string; value: string | number; subtext: string;
-  icon: string; color: string; trend?: number;
+  label: string;
+  value: string | number;
+  subtext: string;
+  icon: string;
+  color: string;
 }
 interface RecentActivity {
   type: string; description: string; user: string; time: string; icon: string; color: string;
@@ -15,7 +19,7 @@ interface RecentActivity {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, NgFor, NgClass, DecimalPipe, PercentPipe],
+  imports: [RouterLink, NgClass, DecimalPipe, PercentPipe],
   template: `
     <div class="space-y-6">
 
@@ -26,6 +30,9 @@ interface RecentActivity {
           <p class="text-gray-500 text-sm mt-1">Aquí tienes un resumen de hoy — {{ today() }}</p>
         </div>
         <div class="flex gap-2">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loading()">
+            <span class="icon icon-sm">refresh</span> Actualizar
+          </button>
           <button class="btn btn-secondary" routerLink="/reportes" class="text-sm">
             <span class="icon mr-1 text-base">bar_chart</span> Reportes
           </button>
@@ -35,9 +42,26 @@ interface RecentActivity {
         </div>
       </div>
 
+      @if (svc.loading() && !statsCards().length) {
+        <div class="card p-12 flex flex-col items-center text-gray-400">
+          <span class="icon icon-xl animate-spin mb-3">progress_activity</span>
+          <p class="text-sm">Cargando indicadores…</p>
+        </div>
+      } @else if (error()) {
+        <div class="card p-6 border-red-100 bg-red-50 text-red-700 text-sm flex items-start gap-3">
+          <span class="icon shrink-0">error</span>
+          <div>
+            <p class="font-medium">{{ error() }}</p>
+            <p class="text-xs text-red-600/80 mt-2">
+              Si acabas de actualizar el código, reinicia el backend: <code class="bg-red-100 px-1 rounded">npm run start:dev</code> en escolar-backend.
+            </p>
+          </div>
+        </div>
+      }
+
       <!-- Tarjetas estadísticas -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        @for (card of stats; track card.label) {
+        @for (card of statsCards(); track card.label) {
           <div class="card p-5 flex items-start gap-4 hover:shadow-md transition-shadow">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" [ngClass]="card.color">
               <span class="icon text-white text-xl">{{ card.icon }}</span>
@@ -46,14 +70,6 @@ interface RecentActivity {
               <div class="text-2xl font-bold text-gray-800">{{ card.value }}</div>
               <div class="text-sm text-gray-500 truncate">{{ card.label }}</div>
               <div class="flex items-center gap-1 mt-1">
-                @if (card.trend !== undefined) {
-                  <span class="icon text-xs" [ngClass]="card.trend >= 0 ? 'text-green-500' : 'text-red-500'">
-                    {{ card.trend >= 0 ? 'trending_up' : 'trending_down' }}
-                  </span>
-                  <span class="text-xs" [ngClass]="card.trend >= 0 ? 'text-green-600' : 'text-red-600'">
-                    {{ card.trend >= 0 ? '+' : '' }}{{ card.trend }}%
-                  </span>
-                }
                 <span class="text-xs text-gray-400">{{ card.subtext }}</span>
               </div>
             </div>
@@ -166,25 +182,29 @@ interface RecentActivity {
             <h3 class="font-semibold text-gray-800">Vacantes Disponibles</h3>
             <a routerLink="/matricula/vacantes" class="text-xs text-indigo-600 hover:underline">Gestionar</a>
           </div>
-          <div class="space-y-2">
-            @for (v of vacantes; track v.grado) {
-              <div class="flex items-center justify-between py-2 border-b border-gray-50">
-                <div>
-                  <div class="text-sm font-medium text-gray-700">{{ v.grado }}</div>
-                  <div class="text-xs text-gray-400">{{ v.ocupado }}/{{ v.total }} ocupadas</div>
+          @if (svc.loading() && !vacantesDisponibles().length) {
+            <p class="text-sm text-gray-400 py-6 text-center">Cargando vacantes…</p>
+          } @else if (!vacantesDisponibles().length) {
+            <p class="text-sm text-gray-400 py-6 text-center">No hay vacantes disponibles en este momento.</p>
+          } @else {
+            <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+              @for (v of vacantesDisponibles(); track v.id) {
+                <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-b-0">
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-gray-700 truncate">{{ v.label }}</div>
+                    <div class="text-xs text-gray-400">{{ v.matriculados }}/{{ v.capacidad }} ocupadas</div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0 ml-3">
+                    <span class="text-sm font-bold"
+                      [ngClass]="v.disponibles > 5 ? 'text-green-600' : v.disponibles > 0 ? 'text-yellow-600' : 'text-red-600'">
+                      {{ v.disponibles }} libres
+                    </span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-bold"
-                    [ngClass]="v.libres > 5 ? 'text-green-600' : v.libres > 0 ? 'text-yellow-600' : 'text-red-600'">
-                    {{ v.libres }} libres
-                  </span>
-                  @if (v.libres === 0) {
-                    <span class="badge badge-danger">Lleno</span>
-                  }
-                </div>
-              </div>
-            }
-          </div>
+              }
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3">{{ vacantesDisponibles().length }} sección(es) con cupo · A.E. {{ svc.stats()?.anioEscolar }}</p>
+          }
         </div>
 
         <!-- Actividad reciente -->
@@ -230,8 +250,66 @@ interface RecentActivity {
 export class DashboardComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   readonly auth = inject(AuthService);
+  readonly svc = inject(DashboardService);
 
-  ngOnInit(): void { this.layout.setTitle('Dashboard'); }
+  readonly error = signal('');
+
+  readonly vacantesDisponibles = computed(() => this.svc.stats()?.vacantesDisponibles ?? []);
+
+  readonly statsCards = computed((): StatCard[] => {
+    const s = this.svc.stats();
+    if (!s) return [];
+    return [
+      {
+        label: 'Estudiantes Matriculados',
+        value: s.estudiantesMatriculados.toLocaleString('es-PE'),
+        subtext: `A.E. ${s.anioEscolar}`,
+        icon: 'school',
+        color: 'bg-indigo-500',
+      },
+      {
+        label: 'Docentes Activos',
+        value: s.docentesActivos.toLocaleString('es-PE'),
+        subtext: 'en planta',
+        icon: 'co_present',
+        color: 'bg-blue-500',
+      },
+      {
+        label: 'Asistencia Promedio',
+        value: `${s.asistenciaPromedio}%`,
+        subtext: s.totalRegistrosAsistencia
+          ? `${s.totalRegistrosAsistencia} registros en ${s.anioEscolar}`
+          : `sin registros en ${s.anioEscolar}`,
+        icon: 'fact_check',
+        color: 'bg-green-500',
+      },
+      {
+        label: 'Pagos Pendientes',
+        value: `S/ ${s.pagosPendientes.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        subtext: s.familiasConDeuda === 1
+          ? '1 familia con deuda'
+          : `${s.familiasConDeuda} familias con deuda`,
+        icon: 'money_off',
+        color: 'bg-red-500',
+      },
+    ];
+  });
+
+  ngOnInit(): void {
+    this.layout.setTitle('Dashboard');
+    this.cargar();
+  }
+
+  cargar(): void {
+    this.error.set('');
+    this.svc.loadStats().subscribe({
+      error: err => {
+        this.error.set(
+          err instanceof Error ? err.message : 'No se pudieron cargar los indicadores del dashboard.',
+        );
+      },
+    });
+  }
 
   primerNombre(): string {
     return this.auth.currentUser()?.nombre?.split(' ')[0] ?? 'Usuario';
@@ -240,13 +318,6 @@ export class DashboardComponent implements OnInit {
   today(): string {
     return new Intl.DateTimeFormat('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
   }
-
-  stats: StatCard[] = [
-    { label: 'Estudiantes Matriculados', value: '1,248',  subtext: 'este año',   icon: 'school',        color: 'bg-indigo-500', trend: 3.2  },
-    { label: 'Docentes Activos',         value: '64',     subtext: 'en planta',  icon: 'co_present',    color: 'bg-blue-500',   trend: 0    },
-    { label: 'Asistencia Promedio',      value: '91.4%',  subtext: 'esta semana',icon: 'fact_check',    color: 'bg-green-500',  trend: 1.8  },
-    { label: 'Pagos Pendientes',         value: 'S/ 12,450', subtext: '38 familias',icon: 'money_off',  color: 'bg-red-500',    trend: -5.2 },
-  ];
 
   rendimiento = [
     { nombre: '1A Primaria',    aprobados: 92, proceso: 5, desaprobados: 3  },
@@ -267,13 +338,6 @@ export class DashboardComponent implements OnInit {
     { label: 'Recaudado (Jun)',  value: 'S/ 48,200', pct: 74, valueColor: 'text-green-600',  matColor: 'primary' as const },
     { label: 'Pendiente',        value: 'S/ 12,450', pct: 20, valueColor: 'text-red-600',    matColor: 'warn'    as const },
     { label: 'Meta mensual',     value: 'S/ 65,000', pct: 100,valueColor: 'text-gray-700',   matColor: 'accent'  as const },
-  ];
-
-  vacantes = [
-    { grado: '1A Primaria A',   total: 30, ocupado: 28, libres: 2  },
-    { grado: '2A Primaria B',   total: 30, ocupado: 30, libres: 0  },
-    { grado: '1A Secundaria',   total: 35, ocupado: 29, libres: 6  },
-    { grado: '5A Secundaria',   total: 30, ocupado: 25, libres: 5  },
   ];
 
   recentActivity: RecentActivity[] = [

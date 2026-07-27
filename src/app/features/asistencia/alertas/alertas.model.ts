@@ -3,7 +3,7 @@ export interface AlertSettings {
   diasAlertaCritica: number;
 }
 
-export type NivelAlerta = 'alerta' | 'critico';
+export type NivelAlerta = 'normal' | 'alerta' | 'critico';
 
 export interface AlertaAusentismo {
   studentId: number;
@@ -17,11 +17,29 @@ export interface AlertaAusentismo {
   ultimaFalta: string | null;
   nivelAlerta: NivelAlerta;
   motivoAlerta: string;
+  totalRegistrosBd?: number;
+  fechasInasistencia?: string[];
+  apoderadoNotificado?: boolean;
+  notificadoAt?: string | null;
+  notificadoPor?: string | null;
+}
+
+export interface AlertasResumen {
+  totalAlumnos: number;
+  alumnosConFaltasInjustificadas: number;
+  totalFaltasInjustificadas: number;
+  totalRegistrosAsistencia: number;
+  alumnosEnAlerta: number;
+  alumnosEnCritico: number;
 }
 
 export interface AlertasResponse {
   settings: AlertSettings;
   alerts: AlertaAusentismo[];
+  conFaltas: AlertaAusentismo[];
+  resumen: AlertasResumen;
+  mes: string | null;
+  mesLabel: string | null;
 }
 
 export interface AlertaFilters {
@@ -31,9 +49,3 @@ export interface AlertaFilters {
   busqueda?: string;
   soloCriticos?: boolean;
 }
-
-export const MESES_ALERTAS = [
-  { value: '2026-06', label: 'Junio 2026' },
-  { value: '2026-05', label: 'Mayo 2026' },
-  { value: '', label: 'Todos los meses' },
-];

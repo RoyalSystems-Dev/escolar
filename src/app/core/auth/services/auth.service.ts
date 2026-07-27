@@ -102,7 +102,9 @@ export class AuthService {
   hasPermiso(...p: string[]): boolean    { return p.every(x => this.permisos().includes(x)); }
   hasAnyPermiso(...p: string[]): boolean { return p.some(x => this.permisos().includes(x)); }
 
-  readonly isAdmin = computed(() => this.userRoles().includes('ADMIN'));
+  readonly isAdmin = computed(() =>
+    this._user()?.esAdmin === true || this.userRoles().includes('ADMIN'),
+  );
   readonly isStaffUser = computed(() =>
     this.userRoles().some(r =>
       ['ADMIN', 'DIRECTOR', 'SECRETARIA', 'TESORERO', 'BIBLIOTECARIO'].includes(r),

@@ -15,11 +15,15 @@ import {
 } from './espera.model';
 
 function gradoKey(value: string): string {
-  return value
+  let t = value
     .toLowerCase()
     .replace(/[°º]/g, '')
-    .replace(/\s*(grado|ano|anos)\b/g, '')
+    .replace(/\s*(grado|año|ano|anos)\b/g, '')
     .trim();
+  const withNivel = t.match(/^(.+?)\s+(inicial|primaria|secundaria)$/i);
+  if (withNivel) t = withNivel[1].trim();
+  const num = t.match(/^(\d+)/);
+  return num ? num[1] : t;
 }
 
 @Component({
@@ -433,10 +437,22 @@ export class EsperaComponent implements OnInit {
   });
 
   readonly filtrados = computed(() => {
-    const q = this.filtro().busqueda.toLowerCase().trim();
+    const { nivel, grado, prioridad, estado, busqueda } = this.filtro();
+    const q = busqueda.toLowerCase().trim();
     return this._items().filter((e) => {
-      if (!q) return true;
-      return `${e.estudiante} ${e.dni} ${e.email}`.toLowerCase().includes(q);
+      if (nivel && e.nivel !== nivel) return false;
+      if (grado && gradoKey(e.grado) !== gradoKey(grado)) return false;
+      if (prioridad && e.prioridad !== prioridad) return false;
+      if (estado && e.estado !== estado) return false;
+      if (
+        q &&
+        !`${e.estudiante} ${e.nombres} ${e.apellidos} ${e.dni} ${e.email} ${e.telefono}`
+          .toLowerCase()
+          .includes(q)
+      ) {
+        return false;
+      }
+      return true;
     });
   });
 
@@ -496,18 +512,10 @@ export class EsperaComponent implements OnInit {
   }
 
   cargar(): void {
-    const { nivel, grado, estado, prioridad } = this.filtro();
-    this.svc
-      .load({
-        nivel: nivel || undefined,
-        grado: grado || undefined,
-        estado: estado || undefined,
-        prioridad: prioridad || undefined,
-      })
-      .subscribe({
-        next: (items) => this._items.set(items),
-        error: () => this.mostrarNotificacion('No se pudo cargar la lista de espera', 'error'),
-      });
+    this.svc.load().subscribe({
+      next: (items) => this._items.set(items),
+      error: () => this.mostrarNotificacion('No se pudo cargar la lista de espera', 'error'),
+    });
   }
 
   setFiltro(campo: 'nivel' | 'grado' | 'prioridad' | 'estado' | 'busqueda', valor: string): void {
@@ -516,7 +524,6 @@ export class EsperaComponent implements OnInit {
       if (campo === 'nivel') next.grado = '';
       return next;
     });
-    if (campo !== 'busqueda') this.cargar();
   }
 
   abrirDrawer(): void {

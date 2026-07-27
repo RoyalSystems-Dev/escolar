@@ -25,6 +25,7 @@ export interface AuthUser {
   foto?: string;
   roles: UserRole[];
   permisos: string[];
+  esAdmin?: boolean;
   institucionId: string;
   sedeId?: string;
   estado: 'activo' | 'inactivo' | 'bloqueado';

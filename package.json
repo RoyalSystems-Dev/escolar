@@ -6,7 +6,14 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "qa:install": "playwright install chromium",
+    "qa:visual": "playwright test --project=visual",
+    "qa:visual:update": "playwright test --project=visual --update-snapshots",
+    "qa:visual:ui": "playwright test --project=visual --ui",
+    "qa:visual:report": "playwright show-report",
+    "qa:e2e": "playwright test --project=e2e",
+    "qa": "playwright test"
   },
   "prettier": {
     "printWidth": 100,
@@ -44,6 +51,7 @@
     "@angular/build": "^21.0.3",
     "@angular/cli": "^21.0.3",
     "@angular/compiler-cli": "^21.0.0",
+    "@playwright/test": "^1.62.0",
     "autoprefixer": "^10.5.0",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.15",

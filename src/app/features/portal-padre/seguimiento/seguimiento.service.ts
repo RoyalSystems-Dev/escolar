@@ -51,6 +51,15 @@ export class SeguimientoService {
     );
   }
 
+  markAlertaLeida(studentId: number, alertId: number): Observable<unknown> {
+    const params = new HttpParams().set('email', this.parentEmail());
+    return this.http.post(
+      `${this.base}/children/${studentId}/absence-alerts/${alertId}/read`,
+      {},
+      { params },
+    );
+  }
+
   parentEmail(): string {
     return this.auth.currentUser()?.email ?? 'padre@escolar.pe';
   }

@@ -1,3 +1,19 @@
+import { environment } from '@environments/environment';
+
+export interface JustificacionAdjunto {
+  url: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanoBytes: number;
+}
+
+export interface FaltaPendienteDetalle {
+  id: number;
+  fecha: string;
+  fechaLabel: string;
+  observacion?: string;
+}
+
 export interface PendienteJustificacion {
   studentId: number;
   estudiante: string;
@@ -8,6 +24,7 @@ export interface PendienteJustificacion {
   faltasJustificadas: number;
   totalFaltas: number;
   ultimaFalta: string | null;
+  faltasPendientes: FaltaPendienteDetalle[];
 }
 
 export interface JustificacionItem {
@@ -21,6 +38,8 @@ export interface JustificacionItem {
   motivo: string;
   observacion: string;
   fechas: string[];
+  attendanceIds?: number[];
+  adjuntos?: JustificacionAdjunto[];
   registradoPor: string;
   fechaRegistro: string;
 }
@@ -31,6 +50,16 @@ export interface CreateJustificacionPayload {
   motivo: string;
   observacion?: string;
   registradoPor?: string;
+  mes?: string;
+  attendanceIds?: number[];
+  adjuntos?: File[];
+}
+
+export function justificacionAdjuntoUrl(path: string | null | undefined): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const base = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export interface JustificacionFilters {
@@ -50,9 +79,3 @@ export const MOTIVOS_JUSTIFICACION = [
 ] as const;
 
 export type MotivoJustificacion = (typeof MOTIVOS_JUSTIFICACION)[number];
-
-export const MESES_OPCIONES = [
-  { value: '2026-06', label: 'Junio 2026' },
-  { value: '2026-05', label: 'Mayo 2026' },
-  { value: '', label: 'Todos los meses' },
-];

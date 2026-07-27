@@ -2,8 +2,8 @@ import {
   Directive,
   ElementRef,
   inject,
-  OnInit,
   PLATFORM_ID,
+  afterNextRender,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -14,15 +14,20 @@ export const OVERLAY_ROOT_ID = 'app-overlay-root';
   selector: '[appOverlayPortal]',
   standalone: true,
 })
-export class OverlayPortalDirective implements OnInit {
+export class OverlayPortalDirective {
   private readonly el = inject(ElementRef<HTMLElement>);
   private readonly platformId = inject(PLATFORM_ID);
 
-  ngOnInit(): void {
+  constructor() {
+    afterNextRender(() => this.teleport());
+  }
+
+  private teleport(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     const root = document.getElementById(OVERLAY_ROOT_ID);
-    if (root && this.el.nativeElement.parentElement !== root) {
-      root.appendChild(this.el.nativeElement);
+    const node = this.el.nativeElement;
+    if (root && node.parentElement !== root) {
+      root.appendChild(node);
     }
   }
 }

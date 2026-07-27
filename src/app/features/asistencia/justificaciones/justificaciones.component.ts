@@ -6,17 +6,19 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 import { InstitucionalService } from '../../administracion/institucional/institucional.service';
 import { Nivel } from '../../administracion/institucional/institucional.model';
 import { JustificacionesService } from './justificaciones.service';
+import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
+import { mesActualIso } from '../control/control.service';
 import {
   JustificacionItem,
-  MESES_OPCIONES,
   MOTIVOS_JUSTIFICACION,
   PendienteJustificacion,
+  justificacionAdjuntoUrl,
 } from './justificaciones.model';
 
 @Component({
   selector: 'app-justificaciones',
   standalone: true,
-  imports: [FormsModule, NgClass],
+  imports: [FormsModule, NgClass, OverlayPortalDirective],
   template: `
     <div class="space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -24,6 +26,9 @@ import {
           <h2 class="text-2xl font-bold text-gray-900">Justificación de Faltas</h2>
           <p class="text-sm text-gray-400 mt-0.5">
             Registro y seguimiento de inasistencias justificadas
+          </p>
+          <p class="text-xs text-gray-400 mt-1">
+            Solo se pueden justificar faltas injustificadas (estado F) registradas en base de datos.
           </p>
         </div>
         <button class="btn btn-secondary btn-sm" (click)="cargar()">
@@ -79,11 +84,8 @@ import {
           </div>
           <div>
             <label class="form-label mb-1 block">Mes</label>
-            <select class="form-select" [ngModel]="filtro().mes" (ngModelChange)="setFiltro('mes', $event)">
-              @for (m of meses; track m.value) {
-                <option [value]="m.value">{{ m.label }}</option>
-              }
-            </select>
+            <input type="month" class="form-input"
+              [ngModel]="filtro().mes" (ngModelChange)="setFiltro('mes', $event)">
           </div>
           <div class="sm:col-span-2">
             <label class="form-label mb-1 block">Buscar</label>
@@ -107,12 +109,13 @@ import {
                   <th class="text-center">Sin justificar</th>
                   <th class="text-center">Justificadas</th>
                   <th>Última falta</th>
+                  <th>Fechas en BD</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 @if (svc.loading()) {
-                  <tr><td colspan="6" class="py-12 text-center text-gray-400">Cargando pendientes...</td></tr>
+                  <tr><td colspan="7" class="py-12 text-center text-gray-400">Cargando pendientes...</td></tr>
                 } @else {
                   @for (p of pendientesFiltrados(); track p.studentId) {
                     <tr>
@@ -131,6 +134,9 @@ import {
                         <span class="text-green-600 font-medium">{{ p.faltasJustificadas }}</span>
                       </td>
                       <td class="text-sm text-gray-500">{{ p.ultimaFalta ?? '—' }}</td>
+                      <td class="text-xs text-gray-500 max-w-[160px]">
+                        {{ fechasPendientesLabel(p) }}
+                      </td>
                       <td>
                         <div class="flex justify-center">
                           <button class="btn btn-primary btn-sm" (click)="abrirModal(p)">
@@ -141,9 +147,9 @@ import {
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="6" class="py-12 text-center">
+                      <td colspan="7" class="py-12 text-center">
                         <span class="icon icon-2xl text-gray-200 block mb-2">check_circle</span>
-                        <p class="text-gray-400 text-sm">No hay faltas pendientes de justificar</p>
+                        <p class="text-gray-400 text-sm">No hay faltas injustificadas en BD para este mes</p>
                       </td>
                     </tr>
                   }
@@ -164,13 +170,14 @@ import {
                   <th class="text-center">Cantidad</th>
                   <th>Motivo</th>
                   <th>Fechas justificadas</th>
+                  <th>Documentos</th>
                   <th>Registrado por</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 @if (svc.loading()) {
-                  <tr><td colspan="8" class="py-12 text-center text-gray-400">Cargando historial...</td></tr>
+                  <tr><td colspan="9" class="py-12 text-center text-gray-400">Cargando historial...</td></tr>
                 } @else {
                   @for (j of historialFiltrado(); track j.id) {
                     <tr>
@@ -191,6 +198,22 @@ import {
                         }
                       </td>
                       <td class="text-xs text-gray-500">{{ j.fechas.join(', ') }}</td>
+                      <td class="text-xs">
+                        @if (j.adjuntos?.length) {
+                          <div class="flex flex-col gap-1">
+                            @for (a of j.adjuntos; track a.url) {
+                              <a [href]="adjuntoUrl(a.url)" target="_blank" rel="noopener"
+                                class="text-indigo-600 hover:underline truncate max-w-[140px]"
+                                [title]="a.nombreArchivo">
+                                <span class="icon icon-sm align-middle">attach_file</span>
+                                {{ a.nombreArchivo }}
+                              </a>
+                            }
+                          </div>
+                        } @else {
+                          <span class="text-gray-400">—</span>
+                        }
+                      </td>
                       <td class="text-xs text-gray-500">{{ j.registradoPor }}</td>
                       <td>
                         <div class="flex justify-center">
@@ -203,7 +226,7 @@ import {
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="8" class="py-12 text-center">
+                      <td colspan="9" class="py-12 text-center">
                         <span class="icon icon-2xl text-gray-200 block mb-2">description</span>
                         <p class="text-gray-400 text-sm">No hay justificaciones registradas</p>
                       </td>
@@ -225,68 +248,190 @@ import {
     </div>
 
     @if (modalAbierto()) {
-      <div class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-        (click)="cerrarModal()">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-scale-in"
+      <div appOverlayPortal class="fixed inset-0 z-[80]">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"
+          (click)="cerrarModal()"></div>
+
+        <aside class="absolute inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl border-l border-gray-200
+          flex flex-col animate-slide-in-r"
           (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between px-6 py-4 border-b">
-            <div>
-              <h3 class="font-bold text-gray-900">Justificar Falta</h3>
-              <p class="text-xs text-gray-500">{{ seleccionado()?.estudiante }}</p>
+
+          <!-- Header -->
+          <div class="shrink-0 bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 text-white px-5 py-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 border border-white/20">
+                  <span class="icon text-2xl">fact_check</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[11px] uppercase tracking-wider text-indigo-100 font-semibold">Justificar inasistencias</p>
+                  <h3 class="font-bold text-lg leading-tight truncate">{{ seleccionado()?.estudiante }}</h3>
+                  <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/15 border border-white/20">
+                      {{ seleccionado()?.nivel }}
+                    </span>
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/15 border border-white/20">
+                      {{ seleccionado()?.grado }} · Sec. {{ seleccionado()?.seccion }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-icon text-white/80 hover:text-white hover:bg-white/10 shrink-0"
+                (click)="cerrarModal()">
+                <span class="icon">close</span>
+              </button>
             </div>
-            <button class="btn-icon text-gray-400" (click)="cerrarModal()">
-              <span class="icon">close</span>
-            </button>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <div class="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5">
+                <p class="text-[10px] uppercase tracking-wide text-indigo-100">Sin justificar</p>
+                <p class="text-2xl font-bold">{{ seleccionado()?.faltasSinJustificar ?? 0 }}</p>
+              </div>
+              <div class="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5">
+                <p class="text-[10px] uppercase tracking-wide text-indigo-100">Seleccionadas</p>
+                <p class="text-2xl font-bold">{{ faltasSeleccionadas().length }}</p>
+              </div>
+            </div>
           </div>
 
-          <div class="px-6 py-5 space-y-4">
-            <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
-              <span class="text-sm text-gray-700">Faltas sin justificar</span>
-              <span class="font-bold text-red-600 text-lg">{{ seleccionado()?.faltasSinJustificar ?? 0 }}</span>
-            </div>
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5 min-h-0">
 
-            <div>
-              <label class="form-label">Cantidad a justificar</label>
-              <input type="number" class="form-input mt-1" min="1"
-                [max]="seleccionado()?.faltasSinJustificar ?? 1"
-                [(ngModel)]="form.cantidad">
-            </div>
-
-            <div>
-              <label class="form-label">Motivo <span class="text-red-500">*</span></label>
-              <select class="form-select mt-1" [(ngModel)]="form.motivo">
-                <option value="">— Seleccionar —</option>
-                @for (m of motivos; track m) {
-                  <option [value]="m">{{ m }}</option>
+            <!-- Fechas BD -->
+            <section>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                  <span class="icon icon-sm text-red-500">event_busy</span>
+                  Faltas en base de datos
+                </h4>
+                @if ((seleccionado()?.faltasPendientes?.length ?? 0) > 1) {
+                  <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    (click)="toggleTodasFaltas()">
+                    {{ todasFaltasSeleccionadas() ? 'Quitar todas' : 'Seleccionar todas' }}
+                  </button>
                 }
-              </select>
-            </div>
-
-            @if (form.motivo === 'Otro') {
-              <div>
-                <label class="form-label">Especificar</label>
-                <input class="form-input mt-1" placeholder="Describe el motivo..." [(ngModel)]="form.motivoOtro">
               </div>
-            }
+              <div class="space-y-2">
+                @for (f of seleccionado()?.faltasPendientes ?? []; track f.id) {
+                  <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                    [ngClass]="faltasSeleccionadas().includes(f.id)
+                      ? 'border-indigo-300 bg-indigo-50/80 ring-1 ring-indigo-200'
+                      : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-white'">
+                    <input type="checkbox" class="mt-1 accent-indigo-600"
+                      [checked]="faltasSeleccionadas().includes(f.id)"
+                      (change)="toggleFalta(f.id)">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold text-gray-900">{{ f.fechaLabel }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">F</span>
+                      </div>
+                      @if (f.observacion) {
+                        <p class="text-xs text-gray-500 mt-1">{{ f.observacion }}</p>
+                      }
+                    </div>
+                  </label>
+                } @empty {
+                  <div class="text-center py-8 rounded-xl border border-dashed border-gray-200 bg-gray-50">
+                    <span class="icon text-3xl text-gray-300">event_available</span>
+                    <p class="text-sm text-gray-400 mt-2">No hay registros F en BD</p>
+                  </div>
+                }
+              </div>
+            </section>
 
-            <div>
-              <label class="form-label">Observaciones (opcional)</label>
-              <textarea class="form-input mt-1 min-h-20 resize-none" placeholder="Certificado médico, fecha..."
+            <!-- Motivo -->
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">label</span>
+                Motivo <span class="text-red-500">*</span>
+              </h4>
+              <div class="flex flex-wrap gap-2 mb-3">
+                @for (m of motivos; track m) {
+                  <button type="button"
+                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                    [ngClass]="form.motivo === m
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-700'"
+                    (click)="seleccionarMotivo(m)">
+                    {{ m }}
+                  </button>
+                }
+              </div>
+              @if (form.motivo === 'Otro') {
+                <input class="form-input" placeholder="Describe el motivo..." [(ngModel)]="form.motivoOtro">
+              }
+            </section>
+
+            <!-- Adjuntos -->
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">attach_file</span>
+                Documentos de sustento
+                <span class="text-xs font-normal text-gray-400">(opcional)</span>
+              </h4>
+              <label class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed
+                border-gray-200 bg-gray-50/80 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer transition-colors">
+                <span class="icon text-3xl text-indigo-400">cloud_upload</span>
+                <span class="text-sm font-medium text-gray-700">Arrastra o haz clic para adjuntar</span>
+                <span class="text-[11px] text-gray-400">PDF, imágenes u Office · máx. 5 archivos · 10 MB c/u</span>
+                <input type="file" class="hidden" multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.txt,.zip"
+                  (change)="onAdjuntosChange($event)">
+              </label>
+              @if (adjuntosSeleccionados().length) {
+                <ul class="mt-3 space-y-2">
+                  @for (f of adjuntosSeleccionados(); track f.name + f.size) {
+                    <li class="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-gray-200 text-sm">
+                      <span class="icon icon-sm text-indigo-500 shrink-0">description</span>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-800 truncate">{{ f.name }}</p>
+                        <p class="text-[11px] text-gray-400">{{ formatTamano(f.size) }}</p>
+                      </div>
+                      <button type="button" class="btn-icon text-red-500 hover:bg-red-50 shrink-0"
+                        (click)="quitarAdjunto(f)">
+                        <span class="icon icon-sm">close</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <!-- Observaciones -->
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">notes</span>
+                Observaciones
+              </h4>
+              <textarea class="form-input min-h-[88px] resize-none" rows="3"
+                placeholder="Ej. certificado médico del 12/06, reposo 2 días..."
                 [(ngModel)]="form.observacion"></textarea>
-            </div>
+            </section>
 
             @if (errorForm()) {
-              <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ errorForm() }}</div>
+              <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2">
+                <span class="icon icon-sm shrink-0 mt-0.5">error</span>
+                {{ errorForm() }}
+              </div>
             }
           </div>
 
-          <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-2">
-            <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-            <button class="btn btn-primary" (click)="confirmar()" [disabled]="svc.saving() || !motivoValido()">
-              {{ svc.saving() ? 'Guardando...' : 'Confirmar' }}
+          <!-- Footer -->
+          <div class="shrink-0 px-5 py-4 border-t border-gray-100 bg-gray-50/90 backdrop-blur flex items-center gap-3">
+            <button type="button" class="btn btn-secondary flex-1" (click)="cerrarModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              (click)="confirmar()"
+              [disabled]="svc.saving() || !motivoValido() || faltasSeleccionadas().length === 0">
+              @if (svc.saving()) {
+                <span class="icon icon-sm animate-spin">progress_activity</span>
+                Guardando...
+              } @else {
+                <span class="icon icon-sm">check_circle</span>
+                Confirmar justificación
+              }
             </button>
           </div>
-        </div>
+        </aside>
       </div>
     }
 
@@ -306,11 +451,12 @@ export class JustificacionesComponent implements OnInit {
   private readonly institucional = inject(InstitucionalService);
 
   readonly motivos = MOTIVOS_JUSTIFICACION;
-  readonly meses = MESES_OPCIONES;
 
   readonly tab = signal<'pendientes' | 'historial'>('pendientes');
   readonly modalAbierto = signal(false);
   readonly seleccionado = signal<PendienteJustificacion | null>(null);
+  readonly faltasSeleccionadas = signal<number[]>([]);
+  readonly adjuntosSeleccionados = signal<File[]>([]);
   readonly errorForm = signal('');
   readonly notificacion = signal<{ mensaje: string; tipo: 'success' | 'error' } | null>(null);
 
@@ -323,11 +469,11 @@ export class JustificacionesComponent implements OnInit {
   readonly filtro = signal({
     nivel: '',
     grado: '',
-    mes: '2026-06',
+    mes: mesActualIso(),
     busqueda: '',
   });
 
-  form = { cantidad: 1, motivo: '', motivoOtro: '', observacion: '' };
+  form = { motivo: '', motivoOtro: '', observacion: '' };
 
   readonly gradosDisponibles = computed(() => {
     const nivel = this._niveles().find((n) => n.nombre === this.filtro().nivel);
@@ -416,9 +562,64 @@ export class JustificacionesComponent implements OnInit {
 
   abrirModal(item: PendienteJustificacion): void {
     this.seleccionado.set(item);
-    this.form = { cantidad: 1, motivo: '', motivoOtro: '', observacion: '' };
+    this.faltasSeleccionadas.set(item.faltasPendientes?.map((f) => f.id) ?? []);
+    this.adjuntosSeleccionados.set([]);
+    this.form = { motivo: '', motivoOtro: '', observacion: '' };
     this.errorForm.set('');
     this.modalAbierto.set(true);
+  }
+
+  toggleFalta(id: number): void {
+    this.faltasSeleccionadas.update((ids) =>
+      ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
+    );
+  }
+
+  seleccionarMotivo(motivo: string): void {
+    this.form.motivo = this.form.motivo === motivo ? '' : motivo;
+    if (motivo !== 'Otro') this.form.motivoOtro = '';
+  }
+
+  readonly todasFaltasSeleccionadas = computed(() => {
+    const pendientes = this.seleccionado()?.faltasPendientes ?? [];
+    if (!pendientes.length) return false;
+    const ids = this.faltasSeleccionadas();
+    return pendientes.every((f) => ids.includes(f.id));
+  });
+
+  toggleTodasFaltas(): void {
+    const pendientes = this.seleccionado()?.faltasPendientes ?? [];
+    if (this.todasFaltasSeleccionadas()) {
+      this.faltasSeleccionadas.set([]);
+    } else {
+      this.faltasSeleccionadas.set(pendientes.map((f) => f.id));
+    }
+  }
+
+  formatTamano(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  fechasPendientesLabel(p: PendienteJustificacion): string {
+    return (p.faltasPendientes ?? []).map((f) => f.fechaLabel).join(', ') || '—';
+  }
+
+  adjuntoUrl(url: string): string {
+    return justificacionAdjuntoUrl(url);
+  }
+
+  onAdjuntosChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const nuevos = Array.from(input.files ?? []);
+    const merged = [...this.adjuntosSeleccionados(), ...nuevos].slice(0, 5);
+    this.adjuntosSeleccionados.set(merged);
+    input.value = '';
+  }
+
+  quitarAdjunto(file: File): void {
+    this.adjuntosSeleccionados.update((list) => list.filter((f) => f !== file));
   }
 
   cerrarModal(): void {
@@ -434,12 +635,10 @@ export class JustificacionesComponent implements OnInit {
 
   confirmar(): void {
     const item = this.seleccionado();
-    if (!item || !this.motivoValido()) return;
+    const attendanceIds = this.faltasSeleccionadas();
+    if (!item || !this.motivoValido() || !attendanceIds.length) return;
 
-    const cantidad = Math.min(
-      Math.max(1, this.form.cantidad),
-      item.faltasSinJustificar,
-    );
+    const cantidad = attendanceIds.length;
     const motivo =
       this.form.motivo === 'Otro' ? this.form.motivoOtro.trim() : this.form.motivo;
 
@@ -451,6 +650,9 @@ export class JustificacionesComponent implements OnInit {
         motivo,
         observacion: this.form.observacion.trim() || undefined,
         registradoPor: this.auth.nombreCompleto() || 'Administración',
+        mes: this.filtro().mes || undefined,
+        attendanceIds,
+        adjuntos: this.adjuntosSeleccionados(),
       })
       .subscribe({
         next: () => {

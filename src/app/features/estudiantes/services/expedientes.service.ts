@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { catchError, map, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
-import { ApiExpediente, ApiStudentDocumentsResponse } from '../../../core/api/api.models';
+import { ApiExpediente, ApiStudentDocumentsResponse, StudentsStats } from '../../../core/api/api.models';
 import {
   DocumentoPayload,
   ExpedientePayload,
@@ -11,6 +11,9 @@ import {
 export interface Representante {
   nombres: string;
   apellidos: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  tipoDocumento: string;
   dni: string;
   telefono: string;
   email: string;
@@ -39,11 +42,18 @@ export interface Estudiante {
   codigo: string;
   nombres: string;
   apellidos: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
   dni: string;
+  tipoDocumento: string;
   email: string;
   fechaNac: string;
   sexo: 'M' | 'F';
   direccion: string;
+  distrito: string;
+  provincia: string;
+  departamento: string;
+  telefonoEmergencia: string;
   foto: string;
   grupoSanguineo: string;
   alergias: string;
@@ -66,6 +76,9 @@ export function estudianteVacio(id = 0): Estudiante {
   const repVacio = (): Representante => ({
     nombres: '',
     apellidos: '',
+    apellidoPaterno: '',
+    apellidoMaterno: '',
+    tipoDocumento: 'DNI',
     dni: '',
     telefono: '',
     email: '',
@@ -76,17 +89,24 @@ export function estudianteVacio(id = 0): Estudiante {
     codigo: '',
     nombres: '',
     apellidos: '',
+    apellidoPaterno: '',
+    apellidoMaterno: '',
     dni: '',
+    tipoDocumento: 'DNI',
     email: '',
     fechaNac: '',
     sexo: 'M',
     direccion: '',
+    distrito: '',
+    provincia: '',
+    departamento: '',
+    telefonoEmergencia: '',
     foto: '',
     grupoSanguineo: 'O+',
     alergias: 'Ninguna',
     condicionesSalud: '',
     observaciones: '',
-    grado: '',
+    grado: '1° Primaria',
     seccion: 'A',
     anioIngreso: String(new Date().getFullYear()),
     estado: 'activo',
@@ -100,17 +120,41 @@ export function estudianteVacio(id = 0): Estudiante {
   };
 }
 
+function mapRepresentante(rep: ApiExpediente['padre']): Representante {
+  const paterno = rep.apellidoPaterno?.trim() ?? '';
+  const materno = rep.apellidoMaterno?.trim() ?? '';
+  const apellidos = rep.apellidos || [paterno, materno].filter(Boolean).join(' ');
+  return {
+    nombres: rep.nombres,
+    apellidos,
+    apellidoPaterno: paterno,
+    apellidoMaterno: materno,
+    tipoDocumento: rep.tipoDocumento ?? 'DNI',
+    dni: rep.dni,
+    telefono: rep.telefono,
+    email: rep.email,
+    trabajo: rep.trabajo,
+  };
+}
+
 function fromApi(exp: ApiExpediente): Estudiante {
   return {
     id: exp.id,
     codigo: exp.codigo,
     nombres: exp.nombres,
     apellidos: exp.apellidos,
+    apellidoPaterno: exp.apellidoPaterno ?? '',
+    apellidoMaterno: exp.apellidoMaterno ?? '',
     dni: exp.dni,
+    tipoDocumento: exp.tipoDocumento ?? 'DNI',
     email: exp.email,
     fechaNac: exp.fechaNac,
     sexo: exp.sexo,
     direccion: exp.direccion,
+    distrito: exp.distrito ?? '',
+    provincia: exp.provincia ?? '',
+    departamento: exp.departamento ?? '',
+    telefonoEmergencia: exp.telefonoEmergencia ?? '',
     foto: exp.foto,
     grupoSanguineo: exp.grupoSanguineo,
     alergias: exp.alergias,
@@ -120,9 +164,9 @@ function fromApi(exp: ApiExpediente): Estudiante {
     seccion: exp.seccion,
     anioIngreso: exp.anioIngreso,
     estado: exp.estado,
-    padre: { ...exp.padre },
-    madre: { ...exp.madre },
-    apoderado: { ...exp.apoderado },
+    padre: mapRepresentante(exp.padre),
+    madre: mapRepresentante(exp.madre),
+    apoderado: mapRepresentante(exp.apoderado),
     historialAcademico: exp.historialAcademico.map((h) => ({ ...h })),
     asistenciaPct: exp.asistenciaPct,
     conductaNota: exp.conductaNota,
@@ -141,12 +185,19 @@ function toPayload(e: Estudiante): ExpedientePayload {
   return {
     nombres: e.nombres,
     apellidos: e.apellidos,
+    apellidoPaterno: e.apellidoPaterno || undefined,
+    apellidoMaterno: e.apellidoMaterno || undefined,
     codigo: e.codigo || undefined,
     dni: e.dni,
+    tipoDocumento: e.tipoDocumento || undefined,
     email: e.email || `${e.dni || 'alumno'}@estudiante.pe`,
     fechaNac: e.fechaNac || undefined,
     sexo: e.sexo,
     direccion: e.direccion,
+    distrito: e.distrito || undefined,
+    provincia: e.provincia || undefined,
+    departamento: e.departamento || undefined,
+    telefonoEmergencia: e.telefonoEmergencia || undefined,
     foto: e.foto,
     grupoSanguineo: e.grupoSanguineo,
     alergias: e.alergias,
@@ -178,6 +229,7 @@ export class ExpedientesService {
 
   private readonly _estudiantes = signal<Estudiante[]>([]);
   readonly estudiantes = this._estudiantes.asReadonly();
+  readonly stats = signal<StudentsStats | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
 
@@ -185,6 +237,17 @@ export class ExpedientesService {
     this.loading.set(true);
     this.error.set('');
     this._estudiantes.set([]);
+    this.stats.set(null);
+
+    this.api.getStats().pipe(
+      catchError(() => {
+        this.error.set('No se pudo cargar el resumen de estudiantes.');
+        return of(null);
+      }),
+    ).subscribe((stats) => {
+      if (stats) this.stats.set(stats);
+    });
+
     this.api.list(q).pipe(
       tap((items) => {
         this._estudiantes.set(items.map(fromApi));

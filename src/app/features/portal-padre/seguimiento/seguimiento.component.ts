@@ -6,19 +6,22 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
-import { ComunicadosService, TipoCom } from '../../comunicaciones/comunicados/comunicados.service';
 import { SeguimientoService } from './seguimiento.service';
 import { JustificacionesPadreService } from '../justificaciones/justificaciones-padre.service';
+import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
 import {
   JustificacionItem,
   MOTIVOS_JUSTIFICACION,
   PendienteJustificacion,
+  justificacionAdjuntoUrl,
 } from '../../asistencia/justificaciones/justificaciones.model';
 import {
   SeguimientoVista,
   cursoStyle,
   estadoAsistenciaBadge,
   estadoAsistenciaLabel,
+  alertaAusentismoBadge,
+  alertaAusentismoLabel,
   nivelBadge,
   notaColor,
   parentescoLabel,
@@ -27,67 +30,26 @@ import {
   taskFileUrl,
 } from './seguimiento.model';
 
-const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
-  general:        { badge: 'badge-blue',   label: 'General' },
-  academico:      { badge: 'badge-indigo', label: 'Académico' },
-  administrativo: { badge: 'badge-gray',   label: 'Administrativo' },
-  urgente:        { badge: 'badge-red',    label: 'Urgente' },
-  evento:         { badge: 'badge-purple', label: 'Evento' },
-};
-
 @Component({
   standalone: true,
-  imports: [FormsModule, NgClass, DecimalPipe, RouterLink],
+  imports: [FormsModule, NgClass, DecimalPipe, RouterLink, OverlayPortalDirective],
   template: `
     <div class="space-y-5 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">Portal de apoderados</h2>
+          <h2 class="text-2xl font-bold text-gray-900">Seguimiento académico</h2>
           <p class="text-sm text-gray-400 mt-0.5">
-            Bienvenido/a, {{ auth.nombreCompleto() }} · Resumen del avance de tus hijos
+            Notas, asistencia y tareas de {{ auth.nombreCompleto() }}
           </p>
         </div>
-        <button class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loadingHijos() || svc.loadingTracking()">
-          <span class="icon icon-sm">refresh</span> Actualizar
-        </button>
-      </div>
-
-      <!-- Comunicados activos -->
-      <div class="card p-5">
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <h3 class="font-semibold text-gray-800 flex items-center gap-2">
-            <span class="icon text-indigo-600">campaign</span> Comunicados activos
-          </h3>
-          <a routerLink="/portal-padre/comunicacion" class="text-xs text-indigo-600 hover:underline font-medium">
-            Ver todos
+        <div class="flex gap-2">
+          <a routerLink="/portal-padre/inicio" class="btn btn-secondary btn-sm">
+            <span class="icon icon-sm">home</span> Inicio
           </a>
+          <button class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loadingHijos() || svc.loadingTracking()">
+            <span class="icon icon-sm">refresh</span> Actualizar
+          </button>
         </div>
-        @if (comunicadosSvc.loading()) {
-          <p class="text-sm text-gray-400 py-4 text-center">Cargando comunicados…</p>
-        } @else if (!comunicadosActivos().length) {
-          <p class="text-sm text-gray-400 py-4 text-center">No hay comunicados activos para padres.</p>
-        } @else {
-          <div class="space-y-2">
-            @for (c of comunicadosActivos(); track c.id) {
-              <a routerLink="/portal-padre/comunicacion"
-                class="block p-3 rounded-xl border border-gray-100 hover:bg-indigo-50/50 hover:border-indigo-100 transition-colors">
-                <div class="flex items-start justify-between gap-2 mb-1">
-                  <p class="text-sm font-medium text-gray-800">{{ c.titulo }}</p>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <span class="badge text-[10px]" [ngClass]="tipoComCfg(c.tipo).badge">
-                      {{ tipoComCfg(c.tipo).label }}
-                    </span>
-                    @if (c.prioridad === 'alta' || c.tipo === 'urgente') {
-                      <span class="badge badge-red text-[10px]">Urgente</span>
-                    }
-                  </div>
-                </div>
-                <p class="text-xs text-gray-500 line-clamp-2">{{ c.cuerpo }}</p>
-                <p class="text-[11px] text-gray-400 mt-1">{{ c.fechaPublicacion }} · {{ c.autor }}</p>
-              </a>
-            }
-          </div>
-        }
       </div>
 
       @if (svc.loadingHijos()) {
@@ -343,6 +305,62 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
               <div class="card p-4 border-l-4 border-l-blue-400"><p class="text-xs text-blue-600">Justificadas</p><p class="text-2xl font-bold text-blue-600">{{ d.asistencia.justificadas }}</p></div>
             </div>
 
+            @if (d.alertasAusentismo?.length) {
+              <div class="space-y-3">
+                @for (alert of d.alertasAusentismo; track alert.id) {
+                  <div class="card p-4 border-l-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3"
+                    [ngClass]="alert.leidoEnPortal
+                      ? 'border-gray-300 bg-gray-50/60'
+                      : alert.nivelAlerta === 'critico'
+                        ? 'border-red-500 bg-red-50/50'
+                        : 'border-amber-400 bg-amber-50/50'">
+                    <div class="flex items-start gap-3 min-w-0">
+                      <span class="icon shrink-0 mt-0.5"
+                        [ngClass]="alert.leidoEnPortal ? 'text-gray-400' : alert.nivelAlerta === 'critico' ? 'text-red-600' : 'text-amber-600'">
+                        {{ alert.leidoEnPortal ? 'mark_email_read' : 'notifications_active' }}
+                      </span>
+                      <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <p class="font-semibold text-gray-900">Alerta de ausentismo · {{ alert.mesLabel }}</p>
+                          <span class="badge text-[10px]" [ngClass]="alertaAusentismoBadge(alert.nivelAlerta)">
+                            {{ alertaAusentismoLabel(alert.nivelAlerta) }}
+                          </span>
+                          @if (!alert.leidoEnPortal) {
+                            <span class="badge badge-indigo text-[10px]">Nueva</span>
+                          }
+                        </div>
+                        <p class="text-sm text-gray-700 mt-1">
+                          <strong>{{ alert.faltasInjustificadas }}</strong> falta(s) injustificada(s)
+                          · {{ alert.diasConsecutivos }} día(s) consecutivo(s)
+                        </p>
+                        @if (alert.motivoAlerta) {
+                          <p class="text-xs text-gray-500 mt-1">{{ alert.motivoAlerta }}</p>
+                        }
+                        <p class="text-[11px] text-gray-400 mt-2">
+                          Notificado el {{ alert.notificadoAt }}
+                          @if (alert.correoEnviado) { · también enviado a su correo }
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 shrink-0">
+                      @if (!alert.leidoEnPortal) {
+                        <button type="button" class="btn btn-secondary btn-sm"
+                          (click)="marcarAlertaLeida(alert.id)">
+                          Entendido
+                        </button>
+                      }
+                      @if (pendienteActual()) {
+                        <button type="button" class="btn btn-primary btn-sm"
+                          (click)="abrirModalJustificarDesdeFalta()">
+                          Justificar
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
             @if (pendienteActual(); as p) {
               <div class="card p-4 border-l-4 border-l-red-400 bg-red-50/40">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -389,6 +407,16 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
                           </p>
                           @if (j.observacion) {
                             <p class="text-xs text-gray-400 mt-1">{{ j.observacion }}</p>
+                          }
+                          @if (j.adjuntos?.length) {
+                            <div class="flex flex-wrap gap-2 mt-2">
+                              @for (a of j.adjuntos; track a.url) {
+                                <a [href]="justificacionAdjuntoUrl(a.url)" target="_blank" rel="noopener"
+                                  class="text-xs text-indigo-600 hover:underline inline-flex items-center gap-1">
+                                  <span class="icon icon-sm">attach_file</span>{{ a.nombreArchivo }}
+                                </a>
+                              }
+                            </div>
                           }
                         </div>
                         <span class="text-[11px] text-gray-400 whitespace-nowrap">{{ j.fechaRegistro }}</span>
@@ -486,65 +514,181 @@ const TIPO_COM_CFG: Record<TipoCom, { badge: string; label: string }> = {
     </div>
 
     @if (modalJustificar()) {
-      <div class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-        (click)="cerrarModalJustificar()">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+      <div appOverlayPortal class="fixed inset-0 z-[80]">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+          (click)="cerrarModalJustificar()"></div>
+
+        <aside class="absolute inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl border-l border-gray-200
+          flex flex-col animate-slide-in-r"
           (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between px-6 py-4 border-b">
-            <div>
-              <h3 class="font-bold text-gray-900">Justificar falta</h3>
-              <p class="text-xs text-gray-500">{{ data()?.estudiante?.nombreCompleto }}</p>
-            </div>
-            <button type="button" class="btn-icon text-gray-400" (click)="cerrarModalJustificar()">
-              <span class="icon">close</span>
-            </button>
-          </div>
-          <div class="px-6 py-5 space-y-4">
-            <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
-              <span class="text-sm text-gray-700">Faltas sin justificar</span>
-              <span class="font-bold text-red-600 text-lg">{{ pendienteActual()?.faltasSinJustificar ?? 0 }}</span>
-            </div>
-            <div>
-              <label class="form-label">Cantidad a justificar</label>
-              <input type="number" class="form-input mt-1" min="1"
-                [max]="pendienteActual()?.faltasSinJustificar ?? 1"
-                [(ngModel)]="formJustificar.cantidad">
-            </div>
-            <div>
-              <label class="form-label">Motivo <span class="text-red-500">*</span></label>
-              <select class="form-select mt-1" [(ngModel)]="formJustificar.motivo">
-                <option value="">— Seleccionar —</option>
-                @for (m of motivosJustificacion; track m) {
-                  <option [value]="m">{{ m }}</option>
-                }
-              </select>
-            </div>
-            @if (formJustificar.motivo === 'Otro') {
-              <div>
-                <label class="form-label">Especificar</label>
-                <input class="form-input mt-1" placeholder="Describe el motivo..." [(ngModel)]="formJustificar.motivoOtro">
+
+          <div class="shrink-0 bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 text-white px-5 py-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 border border-white/20">
+                  <span class="icon text-2xl">fact_check</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[11px] uppercase tracking-wider text-indigo-100 font-semibold">Justificar inasistencias</p>
+                  <h3 class="font-bold text-lg leading-tight truncate">{{ data()?.estudiante?.nombreCompleto }}</h3>
+                  @if (data()?.estudiante) {
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/15 border border-white/20">
+                        {{ data()!.estudiante.grado }} · Sec. {{ data()!.estudiante.seccion }}
+                      </span>
+                    </div>
+                  }
+                </div>
               </div>
-            }
-            <div>
-              <label class="form-label">Observaciones (opcional)</label>
-              <textarea class="form-input mt-1 min-h-20 resize-none"
+              <button type="button" class="btn-icon text-white/80 hover:text-white hover:bg-white/10 shrink-0"
+                (click)="cerrarModalJustificar()">
+                <span class="icon">close</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <div class="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5">
+                <p class="text-[10px] uppercase tracking-wide text-indigo-100">Sin justificar</p>
+                <p class="text-2xl font-bold">{{ pendienteActual()?.faltasSinJustificar ?? 0 }}</p>
+              </div>
+              <div class="rounded-xl bg-white/10 border border-white/15 px-3 py-2.5">
+                <p class="text-[10px] uppercase tracking-wide text-indigo-100">Seleccionadas</p>
+                <p class="text-2xl font-bold">{{ faltasSeleccionadas().length }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5 min-h-0">
+            <section>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                  <span class="icon icon-sm text-red-500">event_busy</span>
+                  Faltas en base de datos
+                </h4>
+                @if ((pendienteActual()?.faltasPendientes?.length ?? 0) > 1) {
+                  <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    (click)="toggleTodasFaltasJustificar()">
+                    {{ todasFaltasJustificarSeleccionadas() ? 'Quitar todas' : 'Seleccionar todas' }}
+                  </button>
+                }
+              </div>
+              <div class="space-y-2">
+                @for (f of pendienteActual()?.faltasPendientes ?? []; track f.id) {
+                  <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                    [ngClass]="faltasSeleccionadas().includes(f.id)
+                      ? 'border-indigo-300 bg-indigo-50/80 ring-1 ring-indigo-200'
+                      : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-white'">
+                    <input type="checkbox" class="mt-1 accent-indigo-600"
+                      [checked]="faltasSeleccionadas().includes(f.id)"
+                      (change)="toggleFaltaJustificar(f.id)">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold text-gray-900">{{ f.fechaLabel }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">F</span>
+                      </div>
+                      @if (f.observacion) {
+                        <p class="text-xs text-gray-500 mt-1">{{ f.observacion }}</p>
+                      }
+                    </div>
+                  </label>
+                } @empty {
+                  <div class="text-center py-8 rounded-xl border border-dashed border-gray-200 bg-gray-50">
+                    <span class="icon text-3xl text-gray-300">event_available</span>
+                    <p class="text-sm text-gray-400 mt-2">No hay registros F en BD</p>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">label</span>
+                Motivo <span class="text-red-500">*</span>
+              </h4>
+              <div class="flex flex-wrap gap-2 mb-3">
+                @for (m of motivosJustificacion; track m) {
+                  <button type="button"
+                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                    [ngClass]="formJustificar.motivo === m
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-700'"
+                    (click)="seleccionarMotivoJustificar(m)">
+                    {{ m }}
+                  </button>
+                }
+              </div>
+              @if (formJustificar.motivo === 'Otro') {
+                <input class="form-input" placeholder="Describe el motivo..." [(ngModel)]="formJustificar.motivoOtro">
+              }
+            </section>
+
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">attach_file</span>
+                Documentos de sustento
+                <span class="text-xs font-normal text-gray-400">(opcional)</span>
+              </h4>
+              <label class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed
+                border-gray-200 bg-gray-50/80 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer transition-colors">
+                <span class="icon text-3xl text-indigo-400">cloud_upload</span>
+                <span class="text-sm font-medium text-gray-700">Arrastra o haz clic para adjuntar</span>
+                <span class="text-[11px] text-gray-400">PDF, imágenes u Office · máx. 5 archivos · 10 MB c/u</span>
+                <input type="file" class="hidden" multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.txt,.zip"
+                  (change)="onAdjuntosJustificarChange($event)">
+              </label>
+              @if (adjuntosJustificar().length) {
+                <ul class="mt-3 space-y-2">
+                  @for (f of adjuntosJustificar(); track f.name + f.size) {
+                    <li class="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-gray-200 text-sm">
+                      <span class="icon icon-sm text-indigo-500 shrink-0">description</span>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-800 truncate">{{ f.name }}</p>
+                        <p class="text-[11px] text-gray-400">{{ formatTamano(f.size) }}</p>
+                      </div>
+                      <button type="button" class="btn-icon text-red-500 hover:bg-red-50 shrink-0"
+                        (click)="quitarAdjuntoJustificar(f)">
+                        <span class="icon icon-sm">close</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <section>
+              <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <span class="icon icon-sm text-indigo-500">notes</span>
+                Observaciones
+              </h4>
+              <textarea class="form-input min-h-[88px] resize-none" rows="3"
                 placeholder="Adjunta detalle del certificado o constancia..."
                 [(ngModel)]="formJustificar.observacion"></textarea>
-            </div>
+            </section>
+
             @if (errorJustificar()) {
-              <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2">
+                <span class="icon icon-sm shrink-0 mt-0.5">error</span>
                 {{ errorJustificar() }}
               </div>
             }
           </div>
-          <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-2">
-            <button type="button" class="btn btn-secondary" (click)="cerrarModalJustificar()">Cancelar</button>
-            <button type="button" class="btn btn-primary" (click)="confirmarJustificacion()"
-              [disabled]="justSvc.saving() || !motivoJustificarValido()">
-              {{ justSvc.saving() ? 'Enviando...' : 'Enviar justificación' }}
+
+          <div class="shrink-0 px-5 py-4 border-t border-gray-100 bg-gray-50/90 backdrop-blur flex items-center gap-3">
+            <button type="button" class="btn btn-secondary flex-1" (click)="cerrarModalJustificar()">Cancelar</button>
+            <button type="button" class="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              (click)="confirmarJustificacion()"
+              [disabled]="justSvc.saving() || !motivoJustificarValido() || faltasSeleccionadas().length === 0">
+              @if (justSvc.saving()) {
+                <span class="icon icon-sm animate-spin">progress_activity</span>
+                Enviando...
+              } @else {
+                <span class="icon icon-sm">send</span>
+                Enviar justificación
+              }
             </button>
           </div>
-        </div>
+        </aside>
       </div>
     }
 
@@ -562,18 +706,19 @@ export class SeguimientoComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly svc = inject(SeguimientoService);
   readonly justSvc = inject(JustificacionesPadreService);
-  readonly comunicadosSvc = inject(ComunicadosService);
 
   readonly motivosJustificacion = MOTIVOS_JUSTIFICACION;
   readonly hijoSeleccionado = signal<number | null>(null);
   readonly vista = signal<SeguimientoVista>('resumen');
   readonly pendienteActual = signal<PendienteJustificacion | null>(null);
+  readonly faltasSeleccionadas = signal<number[]>([]);
+  readonly adjuntosJustificar = signal<File[]>([]);
   readonly historialJustificaciones = signal<JustificacionItem[]>([]);
   readonly modalJustificar = signal(false);
   readonly errorJustificar = signal('');
   readonly toastJustificar = signal<{ mensaje: string; tipo: 'success' | 'error' } | null>(null);
 
-  formJustificar = { cantidad: 1, motivo: '', motivoOtro: '', observacion: '' };
+  formJustificar = { motivo: '', motivoOtro: '', observacion: '' };
 
   readonly tabs: { id: SeguimientoVista; label: string; icon: string }[] = [
     { id: 'resumen', label: 'Resumen', icon: 'dashboard' },
@@ -584,8 +729,8 @@ export class SeguimientoComponent implements OnInit {
 
   readonly data = computed(() => this.svc.seguimiento());
 
-  readonly comunicadosActivos = computed(() =>
-    this.comunicadosSvc.paraPadres().slice(0, 4),
+  readonly alertasNoLeidas = computed(() =>
+    (this.data()?.alertasAusentismo ?? []).filter((a) => !a.leidoEnPortal).length,
   );
 
   readonly tareasActivas = computed(() => {
@@ -611,6 +756,8 @@ export class SeguimientoComponent implements OnInit {
   parentescoLabel = parentescoLabel;
   estadoAsistenciaLabel = estadoAsistenciaLabel;
   estadoAsistenciaBadge = estadoAsistenciaBadge;
+  alertaAusentismoLabel = alertaAusentismoLabel;
+  alertaAusentismoBadge = alertaAusentismoBadge;
   tareaEstadoLabel = tareaEstadoLabel;
   tareaEstadoBadge = tareaEstadoBadge;
   taskFileUrl = taskFileUrl;
@@ -621,13 +768,8 @@ export class SeguimientoComponent implements OnInit {
     return '—';
   }
 
-  tipoComCfg(tipo: TipoCom) {
-    return TIPO_COM_CFG[tipo] ?? TIPO_COM_CFG.general;
-  }
-
   ngOnInit(): void {
-    this.layout.setTitle('Inicio');
-    this.comunicadosSvc.load();
+    this.layout.setTitle('Seguimiento académico');
     this.cargar();
   }
 
@@ -652,6 +794,24 @@ export class SeguimientoComponent implements OnInit {
     });
   }
 
+  marcarAlertaLeida(alertId: number): void {
+    const studentId = this.hijoSeleccionado();
+    if (!studentId) return;
+    this.svc.markAlertaLeida(studentId, alertId).subscribe({
+      next: () => {
+        this.svc.seguimiento.update((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            alertasAusentismo: (current.alertasAusentismo ?? []).map((a) =>
+              a.id === alertId ? { ...a, leidoEnPortal: true } : a,
+            ),
+          };
+        });
+      },
+    });
+  }
+
   cargarJustificaciones(studentId: number): void {
     this.justSvc.loadPending(studentId).subscribe({
       next: items => this.pendienteActual.set(items[0] ?? null),
@@ -665,10 +825,58 @@ export class SeguimientoComponent implements OnInit {
 
   abrirModalJustificar(p: PendienteJustificacion): void {
     this.pendienteActual.set(p);
-    this.formJustificar = { cantidad: 1, motivo: '', motivoOtro: '', observacion: '' };
+    this.faltasSeleccionadas.set(p.faltasPendientes?.map((f) => f.id) ?? []);
+    this.adjuntosJustificar.set([]);
+    this.formJustificar = { motivo: '', motivoOtro: '', observacion: '' };
     this.errorJustificar.set('');
     this.modalJustificar.set(true);
   }
+
+  toggleFaltaJustificar(id: number): void {
+    this.faltasSeleccionadas.update((ids) =>
+      ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
+    );
+  }
+
+  seleccionarMotivoJustificar(motivo: string): void {
+    this.formJustificar.motivo = this.formJustificar.motivo === motivo ? '' : motivo;
+    if (motivo !== 'Otro') this.formJustificar.motivoOtro = '';
+  }
+
+  readonly todasFaltasJustificarSeleccionadas = computed(() => {
+    const pendientes = this.pendienteActual()?.faltasPendientes ?? [];
+    if (!pendientes.length) return false;
+    const ids = this.faltasSeleccionadas();
+    return pendientes.every((f) => ids.includes(f.id));
+  });
+
+  toggleTodasFaltasJustificar(): void {
+    const pendientes = this.pendienteActual()?.faltasPendientes ?? [];
+    if (this.todasFaltasJustificarSeleccionadas()) {
+      this.faltasSeleccionadas.set([]);
+    } else {
+      this.faltasSeleccionadas.set(pendientes.map((f) => f.id));
+    }
+  }
+
+  onAdjuntosJustificarChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const nuevos = Array.from(input.files ?? []);
+    this.adjuntosJustificar.update((list) => [...list, ...nuevos].slice(0, 5));
+    input.value = '';
+  }
+
+  quitarAdjuntoJustificar(file: File): void {
+    this.adjuntosJustificar.update((list) => list.filter((f) => f !== file));
+  }
+
+  formatTamano(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  readonly justificacionAdjuntoUrl = justificacionAdjuntoUrl;
 
   abrirModalJustificarDesdeFalta(): void {
     const p = this.pendienteActual();
@@ -691,12 +899,10 @@ export class SeguimientoComponent implements OnInit {
   confirmarJustificacion(): void {
     const studentId = this.hijoSeleccionado();
     const p = this.pendienteActual();
-    if (!studentId || !p || !this.motivoJustificarValido()) return;
+    const attendanceIds = this.faltasSeleccionadas();
+    if (!studentId || !p || !this.motivoJustificarValido() || !attendanceIds.length) return;
 
-    const cantidad = Math.min(
-      Math.max(1, this.formJustificar.cantidad),
-      p.faltasSinJustificar,
-    );
+    const cantidad = attendanceIds.length;
     const motivo = this.formJustificar.motivo === 'Otro'
       ? this.formJustificar.motivoOtro.trim()
       : this.formJustificar.motivo;
@@ -706,6 +912,8 @@ export class SeguimientoComponent implements OnInit {
       cantidad,
       motivo,
       observacion: this.formJustificar.observacion.trim() || undefined,
+      attendanceIds,
+      adjuntos: this.adjuntosJustificar(),
     }).subscribe({
       next: () => {
         this.cerrarModalJustificar();

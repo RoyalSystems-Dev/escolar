@@ -3,6 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
+import {
+  escapeHtml,
+  printIframe,
+  wrapPrintDocumentHtml,
+  writeHtmlToIframe,
+} from '../../../core/print/print-html.util';
 import { HorariosAdminService } from './services/horarios-admin.service';
 import {
   ConflictoHorario,
@@ -24,10 +31,12 @@ type Curso = CursoHorario;
 type Docente = DocenteHorario;
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+const PRINT_PREVIEW_FRAME_ID = 'horarios-print-preview-frame';
+
 @Component({
   selector: 'app-horarios',
   standalone: true,
-  imports: [FormsModule, NgClass],
+  imports: [FormsModule, NgClass, OverlayPortalDirective],
   template: `
 <div class="min-h-screen bg-gray-50 animate-fade-in">
 
@@ -46,7 +55,7 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
         </p>
       </div>
       <div class="flex items-center gap-2 mt-1">
-        <button class="btn btn-secondary text-sm gap-1.5">
+        <button type="button" class="btn btn-secondary text-sm gap-1.5" (click)="imprimir()">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
           </svg>
@@ -424,7 +433,9 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
             </svg>
             <div>
               <div class="font-semibold text-red-700">Se detectaron {{ conflictos().length }} conflicto(s) de horario</div>
-              <p class="text-sm text-red-600 mt-0.5">Un docente está asignado a más de un aula en el mismo período. Revisa y corrige antes de publicar el horario.</p>
+              <p class="text-sm text-red-600 mt-0.5">
+                Un docente está asignado a más de un aula en el mismo día y período. Solo se listan solapamientos reales del horario guardado.
+              </p>
             </div>
           </div>
 
@@ -437,12 +448,15 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                   </svg>
                   <span class="font-semibold text-red-800">{{ conf.docNombre }}</span>
+                  <span class="badge badge-red text-xs shrink-0">Docente solapado</span>
                   <span class="text-red-600 text-sm">·</span>
                   <span class="text-red-700 text-sm font-medium">{{ DIAS[conf.dia] }} · {{ getPeriodoNombre(conf.periodoId) }}</span>
                   <span class="text-red-600 text-sm">({{ getPeriodoHora(conf.periodoId) }})</span>
                 </div>
                 <div class="p-4">
-                  <p class="text-xs text-gray-500 mb-3">Este docente aparece en {{ conf.entradas.length }} aulas simultáneamente:</p>
+                  <p class="text-xs text-gray-500 mb-3">
+                    Este docente aparece en {{ conf.entradas.length }} aulas simultáneamente:
+                  </p>
                   <div class="flex flex-wrap gap-3">
                     @for (ent of conf.entradas; track ent.id) {
                       @let cur = curById(ent.cursoId);
@@ -459,11 +473,11 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
                     }
                   </div>
                   <div class="flex gap-2 mt-4">
-                    <button class="btn btn-danger text-xs gap-1" (click)="resolverConflicto(conf)">
+                    <button type="button" class="btn btn-danger text-xs gap-1" (click)="abrirModalResolverConflicto(conf)">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                       </svg>
-                      Resolver conflicto
+                      Elegir aula a conservar
                     </button>
                   </div>
                 </div>
@@ -595,6 +609,106 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
     </div>
   }
 
+  <!-- MODAL: Resolver conflicto -->
+  @if (confModalOpen()) {
+    @let conf = confResolviendo();
+    @if (conf) {
+      <div appOverlayPortal class="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4" (click)="cerrarModalConflicto()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-scale-in" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between p-5 border-b border-gray-200">
+            <div>
+              <h2 class="text-lg font-bold text-gray-900">Resolver conflicto</h2>
+              <p class="text-xs text-gray-500 mt-0.5">
+                {{ conf.docNombre }} · {{ DIAS[conf.dia] }} · {{ getPeriodoNombre(conf.periodoId) }}
+                ({{ getPeriodoHora(conf.periodoId) }})
+              </p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon" (click)="cerrarModalConflicto()">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="p-5 space-y-4">
+            <p class="text-sm text-gray-600">
+              Elige el horario que deseas <strong>conservar</strong>. Las demás entradas duplicadas se eliminarán.
+            </p>
+            <div class="space-y-2">
+              @for (ent of conf.entradas; track ent.id) {
+                @let cur = curById(ent.cursoId);
+                @let selected = confKeepId() === ent.id;
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-colors"
+                  [ngClass]="selected ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 bg-white hover:border-gray-300'"
+                  (click)="seleccionarAulaConservar(ent.id)">
+                  <span
+                    class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                    [ngClass]="selected ? 'border-indigo-600' : 'border-gray-300'">
+                    @if (selected) {
+                      <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                    }
+                  </span>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    [ngClass]="cur?.colorClass ?? 'bg-gray-100'">
+                    {{ ent.seccion }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-gray-800">{{ ent.nivel }} {{ ent.grado }} {{ ent.seccion }}</div>
+                    <div class="text-xs text-gray-500">{{ cur?.nombre }}</div>
+                  </div>
+                  @if (selected) {
+                    <span class="badge badge-indigo text-xs shrink-0">Se conservará</span>
+                  }
+                </button>
+              }
+            </div>
+            @if (conf.entradas.length > 1) {
+              <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                Se eliminarán {{ conf.entradas.length - 1 }} entrada(s) duplicada(s) en otras aulas.
+              </p>
+            }
+          </div>
+
+          <div class="flex gap-2 p-5 pt-0">
+            <button type="button" class="btn btn-secondary flex-1" (click)="cerrarModalConflicto()">Cancelar</button>
+            <button
+              type="button"
+              class="btn btn-primary flex-1"
+              [disabled]="confKeepId() == null"
+              (click)="confirmarResolverConflicto()">
+              Resolver conflicto
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- VISTA PREVIA DE IMPRESIÓN -->
+  @if (printPreviewOpen()) {
+    <div appOverlayPortal class="fixed inset-0 z-[70] flex flex-col bg-gray-900/60" role="dialog" aria-modal="true">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+        <h2 class="text-sm font-semibold text-gray-900 truncate">{{ printPreviewTitle() }}</h2>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" class="btn btn-secondary text-sm" (click)="cerrarVistaImpresion()">Cerrar</button>
+          <button type="button" class="btn btn-primary text-sm gap-1.5" (click)="ejecutarImpresionPreview()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+      <iframe
+        [id]="PRINT_PREVIEW_FRAME_ID"
+        title="Vista previa de impresión"
+        class="flex-1 w-full min-h-0 bg-white border-0"
+      ></iframe>
+    </div>
+  }
+
   <!-- TOAST -->
   @if (toast().show) {
     <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl animate-slide-in-r text-sm font-medium"
@@ -618,6 +732,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   readonly Math = Math;
   readonly NIVELES: Nivel[] = ['Inicial', 'Primaria', 'Secundaria'];
   readonly DIAS = DIAS;
+  readonly PRINT_PREVIEW_FRAME_ID = PRINT_PREVIEW_FRAME_ID;
   readonly TABS = [
     { id: 'horario', label: 'Horario', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { id: 'gestion', label: 'Gestión', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
@@ -655,7 +770,16 @@ export class HorariosComponent implements OnInit, OnDestroy {
   mCursoId = signal<number | null>(null);
   mDocId = signal<number | null>(null);
 
+  confModalOpen = signal(false);
+  confResolviendo = signal<ConflictoHorario | null>(null);
+  confKeepId = signal<number | null>(null);
+
+  printPreviewOpen = signal(false);
+  printPreviewTitle = signal('');
+
   toast = signal<{ show: boolean; msg: string; type: 'success' | 'error' }>({ show: false, msg: '', type: 'success' });
+
+  private printPreviewHtml = '';
 
   periodosVis = computed(() =>
     this._periodos().filter((p) => p.niveles.includes(this.selNivel())),
@@ -693,7 +817,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
     return this._cursos().filter((c) => ids.has(c.id));
   });
 
-  conflictos = computed(() => this._conflictos());
+  conflictos = computed(() =>
+    this._conflictos().filter((c) => c.tipo === 'docente_solapado'),
+  );
 
   gestionStats = computed(() => {
     const g = this._gestion();
@@ -1006,31 +1132,246 @@ export class HorariosComponent implements OnInit, OnDestroy {
     this.tab.set('horario');
   }
 
-  resolverConflicto(conf: ConflictoHorario): void {
+  abrirModalResolverConflicto(conf: ConflictoHorario): void {
+    this.confResolviendo.set(conf);
+    this.confKeepId.set(conf.entradas[0]?.id ?? null);
+    this.confModalOpen.set(true);
+  }
+
+  seleccionarAulaConservar(id: number): void {
+    this.confKeepId.set(id);
+  }
+
+  cerrarModalConflicto(): void {
+    this.confModalOpen.set(false);
+    this.confResolviendo.set(null);
+    this.confKeepId.set(null);
+  }
+
+  confirmarResolverConflicto(): void {
+    const conf = this.confResolviendo();
+    if (!conf) return;
+
     this.saveSub?.unsubscribe();
 
-    if (conf.tipo === 'asignacion_invalida' && conf.entradas.length === 1) {
-      this.saveSub = this.svc.remove(conf.entradas[0].id).subscribe({
-        next: () => {
-          this.cargarDatos();
-          this.showToast('Entrada sin asignación docente eliminada');
-        },
-        error: (err: Error) => this.showToast(err.message, 'error'),
-      });
+    const keepId = this.confKeepId();
+    if (keepId == null) return;
+
+    const keep = conf.entradas.find((e) => e.id === keepId);
+    if (!keep) {
+      this.showToast('Selecciona un horario válido para conservar.', 'error');
       return;
     }
 
-    const keep = conf.entradas[0];
-    const removeIds = conf.entradas.slice(1).map((e) => e.id);
+    const removeIds = conf.entradas.filter((e) => e.id !== keepId).map((e) => e.id);
+    if (!removeIds.length) {
+      this.showToast('No hay entradas duplicadas para eliminar.', 'error');
+      return;
+    }
+
     this.saveSub = this.svc
       .resolveConflicts({ keepBlockId: keep.id, removeBlockIds: removeIds })
       .subscribe({
         next: () => {
+          this.cerrarModalConflicto();
           this.cargarDatos();
-          this.showToast('Conflicto resuelto — entradas duplicadas eliminadas');
+          this.showToast(
+            `Conflicto resuelto — se conservó ${keep.nivel} ${keep.grado} ${keep.seccion}`,
+          );
         },
         error: (err: Error) => this.showToast(err.message, 'error'),
       });
+  }
+
+  imprimir(): void {
+    const t = this.tab();
+    if (t === 'horario') {
+      this.abrirVistaImpresion(
+        `Horario ${this.selNivel()} ${this.selGrado()} ${this.selSeccion()}`,
+        this.buildHorarioPrintBody(),
+      );
+      return;
+    }
+    if (t === 'gestion') {
+      this.abrirVistaImpresion('Gestión de horarios', this.buildGestionPrintBody());
+      return;
+    }
+    this.abrirVistaImpresion('Conflictos de horario', this.buildConflictosPrintBody());
+  }
+
+  abrirVistaImpresion(titulo: string, contenido: string): void {
+    this.printPreviewTitle.set(titulo);
+    this.printPreviewHtml = wrapPrintDocumentHtml(titulo, contenido);
+    this.printPreviewOpen.set(true);
+    setTimeout(() => this.syncPrintPreviewFrame(), 0);
+  }
+
+  cerrarVistaImpresion(): void {
+    this.printPreviewOpen.set(false);
+    this.printPreviewTitle.set('');
+    this.printPreviewHtml = '';
+  }
+
+  ejecutarImpresionPreview(): void {
+    const iframe = document.getElementById(PRINT_PREVIEW_FRAME_ID) as HTMLIFrameElement | null;
+    if (!iframe || !printIframe(iframe)) {
+      this.showToast('No se pudo abrir el diálogo de impresión.', 'error');
+    }
+  }
+
+  private syncPrintPreviewFrame(): void {
+    const iframe = document.getElementById(PRINT_PREVIEW_FRAME_ID) as HTMLIFrameElement | null;
+    if (!iframe || !this.printPreviewHtml) return;
+    if (!writeHtmlToIframe(iframe, this.printPreviewHtml)) {
+      this.showToast('No se pudo cargar la vista previa.', 'error');
+    }
+  }
+
+  private buildHorarioPrintBody(): string {
+    const stats = this.vistaStats();
+    const fecha = new Date().toLocaleString('es-PE');
+    const headerCols = DIAS.map((d) => `<th>${escapeHtml(d)}</th>`).join('');
+    const rows = this.periodosVis()
+      .map((periodo) => {
+        if (periodo.isReceso) {
+          return `<tr class="receso">
+            <td>${escapeHtml(periodo.nombre)}<br><small>${periodo.horaInicio}–${periodo.horaFin}</small></td>
+            <td colspan="5" style="text-align:center">Recreo — ${periodo.horaInicio} a ${periodo.horaFin}</td>
+          </tr>`;
+        }
+        const cells = [0, 1, 2, 3, 4]
+          .map((di) => {
+            const entrada = this.getEntrada(di, periodo.id);
+            if (!entrada) return '<td class="empty">—</td>';
+            const cur = this.curById(entrada.cursoId);
+            const doc = this.docById(entrada.docenteId);
+            return `<td><strong>${escapeHtml(cur?.nombre ?? '—')}</strong><br><small>${escapeHtml(doc?.abrev ?? '')}</small></td>`;
+          })
+          .join('');
+        return `<tr>
+          <td>${escapeHtml(periodo.nombre)}<br><small>${periodo.horaInicio}–${periodo.horaFin}</small></td>
+          ${cells}
+        </tr>`;
+      })
+      .join('');
+    const leyenda = this.legendaCursos()
+      .map((c) => escapeHtml(c.nombre))
+      .join(' · ');
+
+    return `
+      <h1>Horario semanal — ${escapeHtml(this.selNivel())} ${escapeHtml(this.selGrado())} Sección ${escapeHtml(this.selSeccion())}</h1>
+      <p class="meta">Año escolar ${this.anioEscolar()} · Completitud ${stats.pct}% (${stats.filled}/${stats.totalSlots} períodos) · Generado: ${escapeHtml(fecha)}</p>
+      <table>
+        <thead><tr><th>Período</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${leyenda ? `<p class="meta"><strong>Cursos:</strong> ${leyenda}</p>` : ''}
+    `;
+  }
+
+  private buildGestionPrintBody(): string {
+    const stats = this.gestionStats();
+    const fecha = new Date().toLocaleString('es-PE');
+    const bloques = this.NIVELES.map((nivel) => {
+      const clases = this.clasesPorNivel(nivel);
+      if (!clases.length) return '';
+      const rows = clases
+        .map((cl) => {
+          const pct = cl.totalSlots > 0 ? Math.round((cl.filled / cl.totalSlots) * 100) : 0;
+          const estado = pct === 100 ? 'Completo' : pct > 0 ? 'En progreso' : 'Sin horario';
+          return `<tr>
+            <td>${escapeHtml(cl.grado)} · Sección ${escapeHtml(cl.seccion)}</td>
+            <td>${estado}</td>
+            <td style="text-align:center">${cl.filled} / ${cl.totalSlots}</td>
+            <td style="text-align:center">${pct}%</td>
+          </tr>`;
+        })
+        .join('');
+      return `<div class="block">
+        <h2>${escapeHtml(nivel)}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Grado / Sección</th>
+              <th>Estado</th>
+              <th>Períodos asignados</th>
+              <th>Completitud</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }).join('');
+
+    return `
+      <h1>Gestión de horarios</h1>
+      <p class="meta">Año escolar ${this.anioEscolar()} · Generado: ${escapeHtml(fecha)}</p>
+      <p class="meta">
+        Con horario: <strong>${stats.conHorario}</strong> ·
+        Incompletos: <strong>${stats.enProgreso}</strong> ·
+        Sin horario: <strong>${stats.sinHorario}</strong> ·
+        Total entradas: <strong>${this._entradas().length}</strong>
+      </p>
+      ${bloques || '<p class="empty">No hay aulas registradas.</p>'}
+    `;
+  }
+
+  private buildConflictosPrintBody(): string {
+    const fecha = new Date().toLocaleString('es-PE');
+    const lista = this.conflictos();
+    const conflictosHtml =
+      lista.length === 0
+        ? '<p class="empty">Sin conflictos detectados.</p>'
+        : lista
+            .map((conf) => {
+              const entradas = conf.entradas
+                .map((ent) => {
+                  const cur = this.curById(ent.cursoId);
+                  return `<li>${escapeHtml(ent.nivel)} ${escapeHtml(ent.grado)} ${escapeHtml(ent.seccion)} — ${escapeHtml(cur?.nombre ?? '—')}</li>`;
+                })
+                .join('');
+              return `<div class="block">
+                <h2>${escapeHtml(conf.docNombre)}</h2>
+                <p class="meta">${escapeHtml(DIAS[conf.dia])} · ${escapeHtml(this.getPeriodoNombre(conf.periodoId))} (${escapeHtml(this.getPeriodoHora(conf.periodoId))})</p>
+                <ul>${entradas}</ul>
+              </div>`;
+            })
+            .join('');
+
+    const huecos = this.todasClasesConEntradas().filter((cl) => cl.filled < cl.totalSlots);
+    const huecosHtml =
+      huecos.length === 0
+        ? '<p class="empty">No hay huecos en horarios con entradas parciales.</p>'
+        : `<table>
+            <thead>
+              <tr>
+                <th>Aula</th>
+                <th>Asignados</th>
+                <th>Libres</th>
+                <th>Completitud</th>
+              </tr>
+            </thead>
+            <tbody>${huecos
+              .map((cl) => {
+                const pct = cl.totalSlots > 0 ? Math.round((cl.filled / cl.totalSlots) * 100) : 0;
+                return `<tr>
+                  <td>${escapeHtml(cl.nivel)} · ${escapeHtml(cl.grado)} ${escapeHtml(cl.seccion)}</td>
+                  <td style="text-align:center">${cl.filled}</td>
+                  <td style="text-align:center">${cl.totalSlots - cl.filled}</td>
+                  <td style="text-align:center">${pct}%</td>
+                </tr>`;
+              })
+              .join('')}</tbody>
+          </table>`;
+
+    return `
+      <h1>Conflictos y huecos de horario</h1>
+      <p class="meta">Año escolar ${this.anioEscolar()} · ${lista.length} conflicto(s) · Generado: ${escapeHtml(fecha)}</p>
+      <h2>Conflictos de docente</h2>
+      ${conflictosHtml}
+      <h2>Huecos en horarios</h2>
+      ${huecosHtml}
+    `;
   }
 
   showToast(msg: string, type: 'success' | 'error' = 'success'): void {

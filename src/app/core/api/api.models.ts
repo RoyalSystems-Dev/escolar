@@ -9,6 +9,16 @@ export interface ApiStudent {
   activo: boolean;
 }
 
+export interface StudentsStats {
+  total: number;
+  activos: number;
+  inactivos: number;
+  retirados: number;
+  mujeres: number;
+  varones: number;
+  matriculadosActivos: number;
+}
+
 export interface ApiStudentMe {
   id: number;
   nombres: string;
@@ -59,6 +69,9 @@ export interface ApiStudentContactos {
 export interface ApiRepresentante {
   nombres: string;
   apellidos: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
+  tipoDocumento?: string;
   dni: string;
   telefono: string;
   email: string;
@@ -112,11 +125,18 @@ export interface ApiExpediente {
   codigo: string;
   nombres: string;
   apellidos: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
   dni: string;
+  tipoDocumento?: string;
   email: string;
   fechaNac: string;
   sexo: 'M' | 'F';
   direccion: string;
+  distrito?: string;
+  provincia?: string;
+  departamento?: string;
+  telefonoEmergencia?: string;
   foto: string;
   grupoSanguineo: string;
   alergias: string;

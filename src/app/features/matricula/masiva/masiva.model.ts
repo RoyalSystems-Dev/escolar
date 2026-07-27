@@ -1,22 +1,44 @@
 export type NivelMatricula = 'Inicial' | 'Primaria' | 'Secundaria';
 
+export type TipoDocumentoMatricula = 'DNI' | 'CE' | 'Pasaporte' | 'PTP' | 'Otro';
+
+export type ParentescoApoderado =
+  | 'padre'
+  | 'madre'
+  | 'abuelo'
+  | 'tio'
+  | 'hermano'
+  | 'otro';
+
 export interface BulkMatriculaPayload {
   fila?: number;
   nombres: string;
-  apellidos: string;
+  apellidos?: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
+  tipoDocumento?: TipoDocumentoMatricula;
   dni: string;
   email?: string;
   sexo?: 'M' | 'F';
   fechaNac?: string;
+  direccion: string;
+  distrito?: string;
+  provincia?: string;
+  departamento?: string;
+  telefonoEmergencia?: string;
   nivel: NivelMatricula;
   grado: string;
   seccion: string;
   anioIngreso?: string;
   apoderadoNombres?: string;
   apoderadoApellidos?: string;
+  apoderadoApellidoPaterno?: string;
+  apoderadoApellidoMaterno?: string;
+  apoderadoTipoDocumento?: TipoDocumentoMatricula;
   apoderadoDni?: string;
   apoderadoTelefono?: string;
   apoderadoEmail?: string;
+  apoderadoParentesco?: ParentescoApoderado;
 }
 
 export interface FilaCargaMatricula extends BulkMatriculaPayload {
@@ -58,19 +80,31 @@ export interface BulkMatriculaPreviewItem {
   fila: number;
   nombres: string;
   apellidos: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
+  tipoDocumento?: TipoDocumentoMatricula;
   dni: string;
   email: string;
   sexo?: 'M' | 'F';
   fechaNac?: string;
+  direccion: string;
+  distrito?: string;
+  provincia?: string;
+  departamento?: string;
+  telefonoEmergencia?: string;
   nivel: NivelMatricula;
   grado: string;
   seccion: string;
   anioIngreso?: string;
   apoderadoNombres?: string;
   apoderadoApellidos?: string;
+  apoderadoApellidoPaterno?: string;
+  apoderadoApellidoMaterno?: string;
+  apoderadoTipoDocumento?: TipoDocumentoMatricula;
   apoderadoDni?: string;
   apoderadoTelefono?: string;
   apoderadoEmail?: string;
+  apoderadoParentesco?: ParentescoApoderado;
   gradoLabel: string;
   motivo?: string;
 }

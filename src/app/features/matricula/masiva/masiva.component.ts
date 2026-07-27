@@ -90,7 +90,7 @@ import {
         <div class="flex-1">
           <h4 class="font-semibold text-gray-800">1. Descargar plantilla</h4>
           <p class="text-xs text-gray-500 mt-1 mb-3">
-            Columnas: nombres, apellidos, dni, nivel, grado, seccion y datos del apoderado
+            Columnas alineadas con Nueva Matrícula: apellidos separados, documento, dirección, ubigeo y apoderado
           </p>
           <div class="flex flex-wrap gap-2">
             <button class="btn btn-secondary btn-sm" (click)="descargarPlantilla()">
@@ -141,10 +141,13 @@ import {
 
   <!-- Ayuda -->
   <div class="card p-4 bg-gray-50 text-xs text-gray-600 space-y-1">
-    <p><strong>Niveles validos:</strong> {{ nivelesTexto }}</p>
-    <p><strong>Grados:</strong> Inicial 1-3, Primaria 1-6, Secundaria 1-5</p>
-    <p><strong>Seccion:</strong> letra unica (A, B, C...)</p>
-    <p><strong>Email:</strong> opcional; si se omite el backend lo genera con el DNI</p>
+    <p><strong>Obligatorios:</strong> nombres, apellido_paterno, apellido_materno, dni, direccion, nivel, grado, seccion</p>
+    <p><strong>Documento:</strong> tipo_documento (DNI, CE, Pasaporte, PTP, Otro). Por defecto DNI.</p>
+    <p><strong>Ubicación:</strong> distrito, provincia, departamento y telefono_emergencia (opcionales)</p>
+    <p><strong>Apoderado:</strong> si incluyes apoderado_nombres, también apoderado_telefono (9 dígitos, empieza con 9)</p>
+    <p><strong>Niveles válidos:</strong> {{ nivelesTexto }}</p>
+    <p><strong>Grados:</strong> Inicial 1-3, Primaria 1-6, Secundaria 1-5 · <strong>Sección:</strong> A, B, C...</p>
+    <p><strong>Compatibilidad:</strong> la columna legacy <code class="text-[10px]">apellidos</code> sigue aceptándose si no usas apellidos separados.</p>
   </div>
 
   @if (errorCarga()) {
@@ -204,6 +207,7 @@ import {
                     <th>Fila</th>
                     <th>Alumno</th>
                     <th>DNI</th>
+                    <th>Dirección</th>
                     <th>Grado</th>
                   </tr>
                 </thead>
@@ -217,6 +221,7 @@ import {
                       <td class="text-gray-400">{{ f.fila }}</td>
                       <td class="font-medium">{{ f.apellidos }}, {{ f.nombres }}</td>
                       <td class="font-mono">{{ f.dni }}</td>
+                      <td class="text-gray-500 max-w-[140px] truncate" [title]="f.direccion">{{ f.direccion }}</td>
                       <td>{{ f.gradoLabel }} {{ f.seccion }}</td>
                     </tr>
                   }
@@ -522,19 +527,31 @@ export class MasivaComponent implements OnInit {
       fila: f.fila,
       nombres: f.nombres,
       apellidos: f.apellidos,
+      apellidoPaterno: f.apellidoPaterno,
+      apellidoMaterno: f.apellidoMaterno,
+      tipoDocumento: f.tipoDocumento,
       dni: f.dni,
       email: f.email,
       sexo: f.sexo,
       fechaNac: f.fechaNac,
+      direccion: f.direccion,
+      distrito: f.distrito,
+      provincia: f.provincia,
+      departamento: f.departamento,
+      telefonoEmergencia: f.telefonoEmergencia,
       nivel: f.nivel,
       grado: f.grado,
       seccion: f.seccion,
       anioIngreso: f.anioIngreso,
       apoderadoNombres: f.apoderadoNombres,
       apoderadoApellidos: f.apoderadoApellidos,
+      apoderadoApellidoPaterno: f.apoderadoApellidoPaterno,
+      apoderadoApellidoMaterno: f.apoderadoApellidoMaterno,
+      apoderadoTipoDocumento: f.apoderadoTipoDocumento,
       apoderadoDni: f.apoderadoDni,
       apoderadoTelefono: f.apoderadoTelefono,
       apoderadoEmail: f.apoderadoEmail,
+      apoderadoParentesco: f.apoderadoParentesco,
     };
   }
 

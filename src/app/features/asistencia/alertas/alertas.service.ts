@@ -42,6 +42,34 @@ export class AlertasService {
       );
   }
 
+  notifyApoderado(payload: {
+    studentId: number;
+    mes: string;
+    notificadoPor?: string;
+  }): Observable<{
+    studentId: number;
+    mes: string;
+    apoderadoNotificado: boolean;
+    notificadoAt: string;
+    notificadoPor: string;
+    correoEnviado: boolean;
+    correoDestino: string | null;
+    correoSimulado: boolean;
+    previewUrl?: string;
+  }> {
+    return this.http.post<{
+      studentId: number;
+      mes: string;
+      apoderadoNotificado: boolean;
+      notificadoAt: string;
+      notificadoPor: string;
+      correoEnviado: boolean;
+      correoDestino: string | null;
+      correoSimulado: boolean;
+      previewUrl?: string;
+    }>(`${this.base}/alerts/notify`, payload);
+  }
+
   private buildParams(filters?: AlertaFilters): HttpParams {
     let params = new HttpParams();
     if (filters?.nivel) params = params.set('nivel', filters.nivel);

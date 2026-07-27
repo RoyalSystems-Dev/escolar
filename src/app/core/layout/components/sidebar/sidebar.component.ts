@@ -127,6 +127,7 @@ export class SidebarComponent {
     }
 
     if (item.permisos?.length) {
+      if (this.auth.isAdmin() || this.auth.hasRole('DIRECTOR')) return true;
       return this.auth.hasAnyPermiso(...item.permisos);
     }
 

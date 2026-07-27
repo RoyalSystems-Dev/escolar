@@ -79,6 +79,7 @@ export class LayoutService {
         { label: 'Nueva Matrícula',      icon: 'person_add',        route: '/matricula/nueva',          permisos: ['matricula.crear', 'matricula.ver'] },
         { label: 'Continuidad',      icon: 'autorenew',         route: '/matricula/continuidad',    permisos: ['matricula.ver'] },
         { label: 'Matrícula Masiva', icon: 'group_add',         route: '/matricula/masiva',         permisos: ['matricula.ver'] },
+        { label: 'Historial Académico', icon: 'history_edu',   route: '/matricula/historial-academico', permisos: ['matricula.ver', 'matricula.crear', 'estudiantes.ver', 'estudiantes.editar', 'evaluacion.ver', 'horarios.ver'] },
         { label: 'Vacantes',         icon: 'event_seat',        route: '/matricula/vacantes',       permisos: ['matricula.vacantes', 'matricula.ver'] },
         { label: 'Lista de Espera',  icon: 'hourglass_empty',   route: '/matricula/espera',         permisos: ['matricula.ver'] },
         { label: 'Cambio de Sección',icon: 'compare_arrows',    route: '/matricula/cambio-seccion', permisos: ['matricula.editar', 'matricula.ver'] },
@@ -153,6 +154,7 @@ export class LayoutService {
       label: 'Portal Padre', icon: 'family_restroom', zone: 'portal-padre', roles: ['PADRE'],
       children: [
         { label: 'Inicio',        icon: 'home',                   route: '/portal-padre/inicio', exact: true },
+        { label: 'Seguimiento',   icon: 'insights',               route: '/portal-padre/seguimiento'  },
         { label: 'Ficha del alumno', icon: 'badge',               route: '/portal-padre/ficha'        },
         { label: 'Tareas',        icon: 'assignment',             route: '/portal-padre/tareas'       },
         { label: 'Clases',        icon: 'menu_book',              route: '/portal-padre/clases'       },
@@ -186,6 +188,7 @@ export class LayoutService {
       permisos: ['admin.institucional', 'admin.usuarios', 'admin.roles', 'admin.reportes'],
       children: [
         { label: 'Configuración Institucional', icon: 'business',        route: '/administracion/institucional', permisos: ['admin.institucional'] },
+        { label: 'Correo electrónico',          icon: 'mail',            route: '/administracion/correo',        permisos: ['admin.institucional'] },
         { label: 'Usuarios',                    icon: 'manage_accounts', route: '/administracion/usuarios',      permisos: ['admin.usuarios'] },
         { label: 'Roles y Permisos',            icon: 'security',        route: '/administracion/roles',         permisos: ['admin.roles'] },
         { label: 'Bitácora',                    icon: 'history',         route: '/administracion/bitacora',      permisos: ['admin.reportes'] },
@@ -193,7 +196,7 @@ export class LayoutService {
     },
     {
       label: 'Maestros', icon: 'tune', zone: 'staff',
-      permisos: ['matricula.vacantes', 'matricula.ver', 'horarios.ver', 'docentes.ver', 'estudiantes.ver', 'admin.institucional', 'comunicados.ver'],
+      permisos: ['matricula.vacantes', 'matricula.ver', 'matricula.crear', 'horarios.ver', 'docentes.ver', 'estudiantes.ver', 'admin.institucional', 'comunicados.ver', 'evaluacion.ver', 'asistencia.ver'],
       children: [
         { label: 'Salones', icon: 'meeting_room', route: '/maestros/salones', permisos: ['matricula.vacantes', 'matricula.ver'] },
         { label: 'Sedes', icon: 'location_city', route: '/maestros/sedes', permisos: ['admin.institucional', 'matricula.ver', 'matricula.vacantes', 'horarios.ver', 'docentes.ver', 'estudiantes.ver'] },
@@ -204,6 +207,7 @@ export class LayoutService {
         { label: 'Períodos Académicos', icon: 'date_range', route: '/maestros/periodos-academicos', permisos: ['horarios.ver', 'evaluacion.ver', 'matricula.ver'] },
         { label: 'Eventos', icon: 'event', route: '/maestros/eventos', permisos: ['comunicados.ver', 'matricula.ver', 'horarios.ver'] },
         { label: 'Fórmulas de Evaluación', icon: 'functions', route: '/maestros/formulas-evaluacion', permisos: ['evaluacion.registrar', 'evaluacion.ver', 'admin.institucional'] },
+        { label: 'Historial Académico', icon: 'history_edu', route: '/matricula/historial-academico', permisos: ['estudiantes.ver', 'estudiantes.editar', 'matricula.ver', 'matricula.crear', 'evaluacion.ver', 'horarios.ver'] },
       ]
     },
   ];

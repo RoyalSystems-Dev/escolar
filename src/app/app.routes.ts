@@ -74,6 +74,11 @@ export const routes: Routes = [
             canActivate: [permisoGuard('admin.reportes')],
             loadComponent: () => import('./features/administracion/bitacora/bitacora.component').then(m => m.BitacoraComponent)
           },
+          {
+            path: 'correo',
+            canActivate: [permisoGuard('admin.institucional')],
+            loadComponent: () => import('./features/administracion/correo/correo-config.component').then(m => m.CorreoConfigComponent)
+          },
         ]
       },
 
@@ -121,6 +126,10 @@ export const routes: Routes = [
             loadComponent: () => import('./features/matricula/masiva/masiva.component').then(m => m.MasivaComponent)
           },
           {
+            path: 'historial-academico',
+            loadComponent: () => import('./features/matricula/maestros/historial-academico/historial-academico.component').then(m => m.MaestrosHistorialAcademicoComponent),
+          },
+          {
             path: 'vacantes',
             loadComponent: () => import('./features/matricula/vacantes/vacantes.component').then(m => m.VacantesComponent)
           },
@@ -138,7 +147,7 @@ export const routes: Routes = [
       // ── Maestros ───────────────────────────────────────
       {
         path: 'maestros',
-        canActivate: [staffAreaGuard, permisoGuard('matricula.vacantes', 'matricula.ver', 'horarios.ver', 'docentes.ver', 'estudiantes.ver', 'admin.institucional', 'asistencia.ver', 'comunicados.ver', 'evaluacion.ver', 'evaluacion.registrar')],
+        canActivate: [staffAreaGuard, permisoGuard('matricula.vacantes', 'matricula.ver', 'matricula.crear', 'horarios.ver', 'docentes.ver', 'estudiantes.ver', 'admin.institucional', 'asistencia.ver', 'comunicados.ver', 'evaluacion.ver', 'evaluacion.registrar')],
         loadComponent: () => import('./features/matricula/maestros/maestros.component').then(m => m.MaestrosComponent),
         children: [
           { path: '', redirectTo: 'salones', pathMatch: 'full' },
@@ -177,6 +186,10 @@ export const routes: Routes = [
           {
             path: 'formulas-evaluacion',
             loadComponent: () => import('./features/matricula/maestros/formulas-evaluacion/formulas-evaluacion.component').then(m => m.MaestrosFormulasEvaluacionComponent),
+          },
+          {
+            path: 'historial-academico',
+            loadComponent: () => import('./features/matricula/maestros/historial-academico/historial-academico.component').then(m => m.MaestrosHistorialAcademicoComponent),
           },
         ],
       },
@@ -357,8 +370,8 @@ export const routes: Routes = [
         canActivate: [roleGuard('PADRE', 'ADMIN')],
         children: [
           { path: '', redirectTo: 'inicio', pathMatch: 'full' },
-          { path: 'inicio',       loadComponent: () => import('./features/portal-padre/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent) },
-          { path: 'seguimiento',  redirectTo: 'inicio', pathMatch: 'full' },
+          { path: 'inicio',       loadComponent: () => import('./features/portal-padre/dashboard/dashboard-padre.component').then(m => m.DashboardPadreComponent) },
+          { path: 'seguimiento',  loadComponent: () => import('./features/portal-padre/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent) },
           { path: 'ficha',        loadComponent: () => import('./features/portal-padre/ficha/ficha-hijo.component').then(m => m.FichaHijoComponent) },
           { path: 'horarios',     loadComponent: () => import('./features/portal-padre/horarios/horarios-padre.component').then(m => m.HorariosPadreComponent) },
           { path: 'tareas',       loadComponent: () => import('./features/portal-padre/tareas/tareas-padre.component').then(m => m.TareasPadreComponent) },

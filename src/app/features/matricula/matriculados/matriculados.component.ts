@@ -94,21 +94,21 @@ import { FutDetalleComponent } from '../shared/fut-detalle.component';
       <div class="relative">
         <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
         <input class="form-input pl-9" type="text" placeholder="Buscar por nombre, DNI o código..."
-               [(ngModel)]="filtro.q" (ngModelChange)="paginaActual.set(1)">
+               [ngModel]="filtro().q" (ngModelChange)="setFiltro('q', $event)">
       </div>
-      <select class="form-input" [(ngModel)]="filtro.grado" (ngModelChange)="paginaActual.set(1)">
+      <select class="form-input" [ngModel]="filtro().grado" (ngModelChange)="setFiltro('grado', $event)">
         <option value="">Todos los grados</option>
         @for (g of gradosDisponibles(); track g) {
           <option [value]="g">{{ g }}</option>
         }
       </select>
-      <select class="form-input" [(ngModel)]="filtro.seccion" (ngModelChange)="paginaActual.set(1)">
+      <select class="form-input" [ngModel]="filtro().seccion" (ngModelChange)="setFiltro('seccion', $event)">
         <option value="">Todas las secciones</option>
         @for (s of seccionesDisponibles(); track s) {
           <option [value]="s">{{ s }}</option>
         }
       </select>
-      <select class="form-input" [(ngModel)]="filtro.anio" (ngModelChange)="paginaActual.set(1)">
+      <select class="form-input" [ngModel]="filtro().anio" (ngModelChange)="setFiltro('anio', $event)">
         <option value="">Todos los años</option>
         @for (a of aniosDisponibles(); track a) {
           <option [value]="a">{{ a }}</option>
@@ -339,19 +339,16 @@ export class MatriculadosComponent implements OnInit {
   detalle = signal<Estudiante | null>(null);
   futAbierto = signal(false);
 
-  filtro = { q: '', grado: '', seccion: '', anio: '' };
+  readonly filtro = signal({ q: '', grado: '', seccion: '', anio: '' });
 
   readonly matriculados = computed(() =>
     this.expedientesSvc.estudiantes().filter((e) => e.estado === 'activo'),
   );
 
   readonly filtrados = computed(() => {
-    const { q, grado, seccion, anio } = this.filtro;
-    const query = q.trim().toLowerCase();
+    const { q, grado, seccion, anio } = this.filtro();
     return this.matriculados().filter((e) => {
-      const matchQ =
-        !query ||
-        `${e.nombres} ${e.apellidos} ${e.dni} ${e.codigo}`.toLowerCase().includes(query);
+      const matchQ = this.coincideBusqueda(e, q);
       const matchG = !grado || e.grado === grado;
       const matchS = !seccion || e.seccion === seccion;
       const matchA = !anio || e.anioIngreso === anio;
@@ -374,19 +371,29 @@ export class MatriculadosComponent implements OnInit {
     return Array.from({ length: fin - ini + 1 }, (_, i) => ini + i);
   });
 
-  readonly totalMatriculados = computed(() => this.matriculados().length);
+  readonly totalMatriculados = computed(
+    () => this.expedientesSvc.stats()?.matriculadosActivos ?? this.matriculados().length,
+  );
 
   readonly gradosDisponibles = computed(() =>
     [...new Set(this.matriculados().map((e) => e.grado).filter(Boolean))].sort(),
   );
 
-  readonly seccionesDisponibles = computed(() =>
-    [...new Set(this.matriculados().map((e) => e.seccion).filter(Boolean))].sort(),
-  );
+  readonly seccionesDisponibles = computed(() => {
+    const grado = this.filtro().grado;
+    const base = grado
+      ? this.matriculados().filter((e) => e.grado === grado)
+      : this.matriculados();
+    return [...new Set(base.map((e) => e.seccion).filter(Boolean))].sort();
+  });
 
-  readonly aniosDisponibles = computed(() =>
-    [...new Set(this.matriculados().map((e) => e.anioIngreso).filter(Boolean))].sort().reverse(),
-  );
+  readonly aniosDisponibles = computed(() => {
+    const { grado, seccion } = this.filtro();
+    let base = this.matriculados();
+    if (grado) base = base.filter((e) => e.grado === grado);
+    if (seccion) base = base.filter((e) => e.seccion === seccion);
+    return [...new Set(base.map((e) => e.anioIngreso).filter(Boolean))].sort().reverse();
+  });
 
   readonly docsMatricula = computed(() => {
     const docs = this.detalle()?.documentos ?? [];
@@ -409,9 +416,12 @@ export class MatriculadosComponent implements OnInit {
     return reg?.numero?.trim() || (codigo ? `FUT-${codigo}` : 'Sin número');
   });
 
-  readonly hayFiltros = computed(
-    () => !!this.filtro.q || !!this.filtro.grado || !!this.filtro.seccion || !!this.filtro.anio,
-  );
+  readonly hayFiltros = computed(() => {
+    const f = this.filtro();
+    return !!f.q.trim() || !!f.grado || !!f.seccion || !!f.anio;
+  });
+
+  private busquedaTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     this.layout.setTitle('Alumnos Matriculados');
@@ -420,6 +430,65 @@ export class MatriculadosComponent implements OnInit {
 
   recargar(): void {
     this.expedientesSvc.load();
+  }
+
+  setFiltro(campo: 'q' | 'grado' | 'seccion' | 'anio', valor: string): void {
+    this.filtro.update((f) => {
+      const next = { ...f, [campo]: valor };
+      if (campo === 'grado' && f.seccion) {
+        const seccionValida = this.matriculados().some(
+          (e) => e.grado === valor && e.seccion === f.seccion,
+        );
+        if (!seccionValida) next.seccion = '';
+      }
+      if (campo === 'grado' && f.anio) {
+        const anioValido = this.matriculados().some(
+          (e) =>
+            (!valor || e.grado === valor) &&
+            (!f.seccion || e.seccion === f.seccion) &&
+            e.anioIngreso === f.anio,
+        );
+        if (!anioValido) next.anio = '';
+      }
+      if (campo === 'seccion' && f.anio) {
+        const anioValido = this.matriculados().some(
+          (e) =>
+            (!f.grado || e.grado === f.grado) &&
+            e.seccion === valor &&
+            e.anioIngreso === f.anio,
+        );
+        if (!anioValido) next.anio = '';
+      }
+      return next;
+    });
+    this.paginaActual.set(1);
+
+    if (campo === 'q') {
+      if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+      this.busquedaTimer = setTimeout(() => {
+        this.expedientesSvc.load(valor.trim() || undefined);
+      }, 350);
+    }
+  }
+
+  private coincideBusqueda(e: Estudiante, q: string): boolean {
+    const query = q.trim().toLowerCase();
+    if (!query) return true;
+    const haystack = [
+      e.nombres,
+      e.apellidos,
+      `${e.apellidos}, ${e.nombres}`,
+      `${e.nombres} ${e.apellidos}`,
+      e.dni,
+      e.codigo,
+      e.email,
+    ]
+      .join(' ')
+      .toLowerCase();
+    return query
+      .split(/\s+/)
+      .filter(Boolean)
+      .every((token) => haystack.includes(token));
   }
 
   porNivel(nivel: string): number {
@@ -431,8 +500,10 @@ export class MatriculadosComponent implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.filtro = { q: '', grado: '', seccion: '', anio: '' };
+    if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+    this.filtro.set({ q: '', grado: '', seccion: '', anio: '' });
     this.paginaActual.set(1);
+    this.expedientesSvc.load();
   }
 
   abrirDetalle(e: Estudiante): void {

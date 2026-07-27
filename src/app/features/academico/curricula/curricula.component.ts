@@ -1839,7 +1839,13 @@ export class CurriculaComponent implements OnInit {
         this.cerrarModalCurso();
         this.showToast(`Curso "${created.nombre}" creado`);
       },
-      error: () => this.showToast('No se pudo crear el curso', 'error'),
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.showToast(
+          Array.isArray(msg) ? msg.join(', ') : msg ?? 'No se pudo crear el curso',
+          'error',
+        );
+      },
     });
   }
 

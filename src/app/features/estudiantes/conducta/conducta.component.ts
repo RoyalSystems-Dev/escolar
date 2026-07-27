@@ -44,7 +44,7 @@ import {
         <p class="text-xs text-red-500 mt-1">{{ loadError() }}</p>
       }
     </div>
-    <button class="btn btn-primary" [disabled]="saving()" (click)="abrirModal()">
+    <button class="btn btn-primary" [disabled]="saving()" (click)="abrirDrawerRegistro()">
       <span class="icon text-base">add</span> Registrar Incidente
     </button>
   </div>
@@ -452,7 +452,7 @@ import {
             </div>
           </div>
           <div class="px-4 py-3 border-t border-gray-100 shrink-0">
-            <button class="btn btn-primary w-full text-sm py-2" (click)="abrirModalParaAlumno(datos.res.alumnoId)">
+            <button class="btn btn-primary w-full text-sm py-2" (click)="abrirDrawerRegistroParaAlumno(datos.res.alumnoId)">
               <span class="icon text-base">add</span> Registrar incidente
             </button>
           </div>
@@ -463,115 +463,132 @@ import {
 
 </div>
 
-<!-- ─── Modal registrar incidente ─── -->
-@if (modalVisible()) {
-  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" (click)="cerrarModal()">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-scale-in" (click)="$event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+<!-- ─── Drawer registrar incidente ─── -->
+@if (drawerRegistroVisible()) {
+  <div class="fixed inset-0 z-50 bg-black/30" (click)="cerrarDrawerRegistro()"></div>
+  <aside class="fixed inset-y-0 right-0 z-[60] w-full max-w-md min-w-0 bg-white shadow-2xl border-l border-gray-200 flex flex-col animate-slide-in-r">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+      <div>
         <h3 class="font-bold text-gray-800 text-lg">Registrar Incidente</h3>
-        <button class="btn btn-icon" (click)="cerrarModal()"><span class="icon">close</span></button>
+        <p class="text-xs text-gray-400 mt-0.5">Nuevo registro de conducta o reconocimiento</p>
       </div>
-      <div class="p-6 space-y-4">
-        <!-- Alumno -->
-        <div>
-          <label class="form-label">Alumno <span class="text-red-400">*</span></label>
-          @if (alumnoModalSel(); as sel) {
-            <div class="flex items-center justify-between p-3 rounded-lg border border-indigo-200 bg-indigo-50">
-              <div>
-                <div class="font-medium text-gray-800 text-sm">{{ sel.nombre }}</div>
-                <div class="text-xs text-gray-500">{{ sel.grado }} "{{ sel.seccion }}"</div>
-              </div>
-              <button type="button" class="btn btn-icon text-gray-400 hover:text-gray-600" title="Cambiar alumno"
-                      (click)="limpiarAlumnoModal()">
-                <span class="icon text-sm">close</span>
-              </button>
+      <button class="btn btn-icon shrink-0" (click)="cerrarDrawerRegistro()">
+        <span class="icon">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-4 min-w-0">
+      <!-- Alumno -->
+      <div class="min-w-0">
+        <label class="form-label">Alumno <span class="text-red-400">*</span></label>
+        @if (alumnoModalSel(); as sel) {
+          <div class="flex items-center justify-between p-3 rounded-lg border border-indigo-200 bg-indigo-50">
+            <div>
+              <div class="font-medium text-gray-800 text-sm">{{ sel.nombre }}</div>
+              <div class="text-xs text-gray-500">{{ sel.grado }} "{{ sel.seccion }}"</div>
             </div>
-          } @else {
-            <div class="flex gap-2 mb-2">
-              <div class="relative flex-1">
-                <span class="icon absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
-                <input class="form-input pl-8" type="text" placeholder="Buscar por nombre..."
-                       [ngModel]="fBusquedaAlumno()" (ngModelChange)="fBusquedaAlumno.set($event)">
-              </div>
-              <select class="form-input w-32 shrink-0" [ngModel]="fGradoAlumnoModal()" (ngModelChange)="fGradoAlumnoModal.set($event)">
-                <option value="todos">Grado</option>
-                @for (g of gradosModal(); track g) { <option [value]="g">{{ g }}</option> }
-              </select>
-            </div>
-            <div class="border border-gray-200 rounded-lg max-h-44 overflow-y-auto">
-              @for (al of alumnosModalFiltrados(); track al.id) {
-                <button type="button"
-                        class="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors"
-                        (click)="seleccionarAlumnoModal(al.id)">
-                  <div class="font-medium text-gray-800 text-sm">{{ al.nombre }}</div>
-                  <div class="text-xs text-gray-400">{{ al.grado }} "{{ al.seccion }}"</div>
-                </button>
-              } @empty {
-                <div class="px-3 py-6 text-center text-sm text-gray-400">No se encontraron alumnos</div>
+            <button type="button" class="btn btn-icon text-gray-400 hover:text-gray-600" title="Cambiar alumno"
+                    (click)="limpiarAlumnoModal()">
+              <span class="icon text-sm">close</span>
+            </button>
+          </div>
+        } @else {
+          <div class="space-y-2">
+            <div class="relative w-full min-w-0">
+              <span class="icon absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none z-10">search</span>
+              <input class="form-input pl-9 w-full min-w-0 block" type="text"
+                     placeholder="Buscar alumno por nombre..."
+                     autocomplete="off"
+                     [ngModel]="fBusquedaAlumno()"
+                     (ngModelChange)="onBusquedaAlumnoChange($event)"
+                     (focus)="alumnoDropdownAbierto.set(true)"
+                     (blur)="cerrarDropdownAlumno()">
+              @if (alumnoDropdownAbierto()) {
+                <div class="absolute z-20 top-full left-0 right-0 mt-1 border border-gray-200 rounded-lg bg-white shadow-lg overflow-hidden">
+                  <div class="max-h-52 overflow-y-auto">
+                    @for (al of alumnosModalFiltrados(); track al.id) {
+                      <button type="button"
+                              class="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors"
+                              (mousedown)="seleccionarAlumnoModal(al.id); $event.preventDefault()">
+                        <div class="font-medium text-gray-800 text-sm">{{ al.nombre }}</div>
+                        <div class="text-xs text-gray-400">{{ al.grado }} "{{ al.seccion }}"</div>
+                      </button>
+                    } @empty {
+                      <div class="px-3 py-6 text-center text-sm text-gray-400">No se encontraron alumnos</div>
+                    }
+                  </div>
+                  @if (alumnosModalFiltrados().length > 0) {
+                    <div class="px-3 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
+                      {{ alumnosModalFiltrados().length }} alumno(s) · clic para seleccionar
+                    </div>
+                  }
+                </div>
               }
             </div>
-            <p class="text-xs text-gray-400 mt-1.5">{{ alumnosModalFiltrados().length }} alumno(s) encontrado(s)</p>
-          }
-        </div>
-        <!-- Tipo y Estado -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="form-label">Tipo <span class="text-red-400">*</span></label>
-            <select class="form-input" [ngModel]="fTipoModal()" (ngModelChange)="fTipoModal.set($event)">
-              @for (t of tiposOpts; track t.val) { <option [value]="t.val">{{ t.label }}</option> }
+            <select class="form-input w-full" [ngModel]="fGradoAlumnoModal()" (ngModelChange)="onGradoAlumnoModalChange($event)">
+              <option value="todos">Todos los grados</option>
+              @for (g of gradosModal(); track g) { <option [value]="g">{{ g }}</option> }
             </select>
           </div>
-          <div>
-            <label class="form-label">Estado</label>
-            <select class="form-input" [ngModel]="fEstadoModal()" (ngModelChange)="fEstadoModal.set($event)">
-              @for (e of estadosOpts; track e.val) { <option [value]="e.val">{{ e.label }}</option> }
-            </select>
-          </div>
-        </div>
-        <!-- Descripción -->
-        <div>
-          <label class="form-label">Descripci\u00f3n <span class="text-red-400">*</span></label>
-          <textarea class="form-input h-24 resize-none" placeholder="Describe el incidente o reconocimiento..."
-                    [ngModel]="fDescripcion()" (ngModelChange)="fDescripcion.set($event)"></textarea>
-        </div>
-        <!-- Fecha y Lugar -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="form-label">Fecha</label>
-            <input class="form-input" type="text" placeholder="DD/MM/AAAA"
-                   [ngModel]="fFecha()" (ngModelChange)="fFecha.set($event)">
-          </div>
-          <div>
-            <label class="form-label">Lugar</label>
-            <select class="form-input" [ngModel]="fLugar()" (ngModelChange)="fLugar.set($event)">
-              @for (l of lugares; track l) { <option [value]="l">{{ l }}</option> }
-            </select>
-          </div>
-        </div>
-        <!-- Medida y Notificar -->
-        <div>
-          <label class="form-label">Medida disciplinaria / reconocimiento</label>
-          <input class="form-input" type="text" placeholder="Medida adoptada..."
-                 [ngModel]="fMedida()" (ngModelChange)="fMedida.set($event)">
-        </div>
-        <label class="flex items-center gap-3 cursor-pointer">
-          <button type="button" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  [ngClass]="fNotificar() ? 'bg-emerald-500' : 'bg-gray-300'"
-                  (click)="fNotificar.set(!fNotificar())">
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
-                  [ngClass]="fNotificar() ? 'translate-x-6' : 'translate-x-1'"></span>
-          </button>
-          <span class="text-sm text-gray-700">Notificar al padre de familia</span>
-        </label>
+        }
       </div>
-      <div class="flex gap-3 px-6 py-4 border-t border-gray-100">
-        <button class="btn btn-ghost flex-1" (click)="cerrarModal()">Cancelar</button>
-        <button class="btn btn-primary flex-1" [disabled]="saving()" (click)="guardar()">
-          <span class="icon text-base">save</span> Guardar
+      <!-- Tipo y Estado -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label">Tipo <span class="text-red-400">*</span></label>
+          <select class="form-input" [ngModel]="fTipoModal()" (ngModelChange)="fTipoModal.set($event)">
+            @for (t of tiposOpts; track t.val) { <option [value]="t.val">{{ t.label }}</option> }
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Estado</label>
+          <select class="form-input" [ngModel]="fEstadoModal()" (ngModelChange)="fEstadoModal.set($event)">
+            @for (e of estadosOpts; track e.val) { <option [value]="e.val">{{ e.label }}</option> }
+          </select>
+        </div>
+      </div>
+      <!-- Descripción -->
+      <div>
+        <label class="form-label">Descripci\u00f3n <span class="text-red-400">*</span></label>
+        <textarea class="form-input h-24 resize-none" placeholder="Describe el incidente o reconocimiento..."
+                  [ngModel]="fDescripcion()" (ngModelChange)="fDescripcion.set($event)"></textarea>
+      </div>
+      <!-- Fecha y Lugar -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label">Fecha</label>
+          <input class="form-input" type="text" placeholder="DD/MM/AAAA"
+                 [ngModel]="fFecha()" (ngModelChange)="fFecha.set($event)">
+        </div>
+        <div>
+          <label class="form-label">Lugar</label>
+          <select class="form-input" [ngModel]="fLugar()" (ngModelChange)="fLugar.set($event)">
+            @for (l of lugares; track l) { <option [value]="l">{{ l }}</option> }
+          </select>
+        </div>
+      </div>
+      <!-- Medida y Notificar -->
+      <div>
+        <label class="form-label">Medida disciplinaria / reconocimiento</label>
+        <input class="form-input" type="text" placeholder="Medida adoptada..."
+               [ngModel]="fMedida()" (ngModelChange)="fMedida.set($event)">
+      </div>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <button type="button" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                [ngClass]="fNotificar() ? 'bg-emerald-500' : 'bg-gray-300'"
+                (click)="fNotificar.set(!fNotificar())">
+          <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                [ngClass]="fNotificar() ? 'translate-x-6' : 'translate-x-1'"></span>
         </button>
-      </div>
+        <span class="text-sm text-gray-700">Notificar al padre de familia</span>
+      </label>
     </div>
-  </div>
+    <div class="flex gap-3 px-5 py-4 border-t border-gray-100 shrink-0">
+      <button class="btn btn-ghost flex-1" (click)="cerrarDrawerRegistro()">Cancelar</button>
+      <button class="btn btn-primary flex-1" [disabled]="saving()" (click)="guardar()">
+        <span class="icon text-base">save</span> Guardar
+      </button>
+    </div>
+  </aside>
 }
   `,
 })
@@ -609,7 +626,7 @@ export class ConductaComponent implements OnInit {
   filtroNivel  = signal('todos');
   selId        = signal<number | null>(null);
   selAlumnoId  = signal<number | null>(null);
-  modalVisible = signal(false);
+  drawerRegistroVisible = signal(false);
   toast        = signal<{ msg: string; tipo: 'ok' | 'err' } | null>(null);
   private busquedaTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -624,6 +641,8 @@ export class ConductaComponent implements OnInit {
   fLugar      = signal('Salón de clase');
   fMedida     = signal('');
   fNotificar  = signal(false);
+  alumnoDropdownAbierto = signal(false);
+  private alumnoDropdownTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly lugares = LUGARES;
   readonly tiposOpts = [
@@ -902,24 +921,56 @@ export class ConductaComponent implements OnInit {
     });
   }
 
-  abrirModal()                     { this.resetForm(); this.modalVisible.set(true); }
-  abrirModalParaAlumno(id: number) { this.resetForm(); this.fAlumnoId.set(id); this.selAlumnoId.set(null); this.modalVisible.set(true); }
-  cerrarModal()                    { this.modalVisible.set(false); }
+  abrirDrawerRegistro() {
+    this.selId.set(null);
+    this.selAlumnoId.set(null);
+    this.resetForm();
+    this.drawerRegistroVisible.set(true);
+  }
+
+  abrirDrawerRegistroParaAlumno(id: number) {
+    this.resetForm();
+    this.fAlumnoId.set(id);
+    this.selAlumnoId.set(null);
+    this.drawerRegistroVisible.set(true);
+  }
+
+  cerrarDrawerRegistro() {
+    this.drawerRegistroVisible.set(false);
+  }
 
   seleccionarAlumnoModal(id: number) {
     this.fAlumnoId.set(id);
     this.fBusquedaAlumno.set('');
     this.fGradoAlumnoModal.set('todos');
+    this.alumnoDropdownAbierto.set(false);
   }
 
   limpiarAlumnoModal() {
     this.fAlumnoId.set(0);
+    this.alumnoDropdownAbierto.set(true);
+  }
+
+  onBusquedaAlumnoChange(val: string) {
+    this.fBusquedaAlumno.set(val);
+    this.alumnoDropdownAbierto.set(true);
+  }
+
+  onGradoAlumnoModalChange(val: string) {
+    this.fGradoAlumnoModal.set(val);
+    this.alumnoDropdownAbierto.set(true);
+  }
+
+  cerrarDropdownAlumno() {
+    if (this.alumnoDropdownTimer) clearTimeout(this.alumnoDropdownTimer);
+    this.alumnoDropdownTimer = setTimeout(() => this.alumnoDropdownAbierto.set(false), 150);
   }
 
   resetForm() {
     this.fAlumnoId.set(0);
     this.fBusquedaAlumno.set('');
     this.fGradoAlumnoModal.set('todos');
+    this.alumnoDropdownAbierto.set(false);
     this.fTipoModal.set('falta_leve');
     this.fEstadoModal.set('pendiente');
     this.fDescripcion.set('');
@@ -949,7 +1000,7 @@ export class ConductaComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.cerrarModal();
+          this.cerrarDrawerRegistro();
           this.cargarPagina(1);
           this.mostrarToast('Incidente registrado correctamente.', 'ok');
         },
