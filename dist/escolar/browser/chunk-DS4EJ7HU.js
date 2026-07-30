@@ -1,0 +1,1 @@
+import{a as i}from"./chunk-IBPJQ5T3.js";function r(t){return t?t.startsWith("http://")||t.startsWith("https://")?t:`${i.apiUrl.replace(/\/api\/v1\/?$/,"")}${t.startsWith("/")?t:`/${t}`}`:""}var s=["Enfermedad","Cita m\xE9dica","Accidente","Duelo familiar","Viaje familiar","Otro"];export{r as a,s as b};
