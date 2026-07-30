@@ -1,6 +1,6 @@
 ﻿import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgClass, TitleCasePipe } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import {
   Documento,
@@ -123,7 +123,7 @@ const CATALOGO_DEFAULT: Record<string, DocRequerido[]> = {
 @Component({
   selector: 'app-estudiantes-list',
   standalone: true,
-  imports: [FormsModule, NgClass, TitleCasePipe],
+  imports: [FormsModule, NgClass],
   template: `
     <div class="space-y-5">
       <!-- Header -->

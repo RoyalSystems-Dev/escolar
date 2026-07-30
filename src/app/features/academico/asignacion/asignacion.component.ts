@@ -809,7 +809,6 @@ const PRINT_PREVIEW_FRAME_ID = 'asignacion-print-preview-frame';
             <option [ngValue]="null">-- Seleccionar docente --</option>
             @for (d of _docentes(); track d.id) {
               @let stats = docenteStats(d.id);
-              @let pct = Math.round((stats.totalHoras / d.maxHoras) * 100);
               <option [ngValue]="d.id">
                 {{ d.apellidos }}, {{ d.nombres }} — {{ d.especialidad }} ({{ stats.totalHoras }}/{{ d.maxHoras }}h)
               </option>

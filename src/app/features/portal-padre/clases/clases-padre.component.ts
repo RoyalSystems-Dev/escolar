@@ -205,7 +205,7 @@ import { HijoResumen } from '../seguimiento/seguimiento.model';
                   <p class="text-sm sm:text-base text-gray-600 whitespace-pre-line leading-relaxed">{{ t.objetivos }}</p>
                 </section>
               }
-              @if (t.imagenesClase?.length) {
+              @if (t.imagenesClase.length) {
                 <section>
                   <p class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Imágenes y recursos visuales</p>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

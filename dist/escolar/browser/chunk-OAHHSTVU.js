@@ -1,1 +1,0 @@
-import{a as e}from"./chunk-LWNKB3J6.js";import{f as r}from"./chunk-5QNDA6TE.js";import{Q as t}from"./chunk-BL2IEK3V.js";var h=()=>{let o=t(e),n=t(r);return o.isAuthenticated()?!0:n.createUrlTree(["/auth/login"])},m=()=>!0;export{h as a,m as b};

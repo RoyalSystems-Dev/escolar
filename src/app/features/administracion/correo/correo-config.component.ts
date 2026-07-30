@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { LayoutService } from '../../../core/layout/services/layout.service';
 import { MailApiService, MailStatus } from './mail-api.service';
 
@@ -58,6 +59,15 @@ import { MailApiService, MailStatus } from './mail-api.service';
               Modo desarrollo: los correos se envían a Ethereal (no llegan al buzón real).
               Tras enviar, abre el enlace <strong>Vista previa</strong> para ver el mensaje.
               Para Gmail real, agrega <code class="bg-white/70 px-1 rounded">MAIL_PASS</code> en <code class="bg-white/70 px-1 rounded">.env</code> y reinicia el backend.
+            </div>
+          }
+
+          @if (s.host.includes('sendgrid')) {
+            <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <strong>SendGrid:</strong> <code class="bg-white/70 px-1 rounded">MAIL_FROM</code> debe coincidir
+              con un remitente verificado en SendGrid → Settings → Sender Authentication.
+              Usualmente: <code class="bg-white/70 px-1 rounded">MAIL_USER=apikey</code> y
+              <code class="bg-white/70 px-1 rounded">MAIL_PASS=&lt;API Key&gt;</code>.
             </div>
           }
 
@@ -181,6 +191,15 @@ export class CorreoConfigComponent implements OnInit {
     });
   }
 
+  private extractApiError(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const msg = err.error?.message;
+      if (Array.isArray(msg)) return msg.join(', ');
+      if (typeof msg === 'string') return msg;
+    }
+    return 'Error al enviar el correo de prueba.';
+  }
+
   enviarPrueba(): void {
     const to = this.testTo.trim();
     if (!to) return;
@@ -205,9 +224,9 @@ export class CorreoConfigComponent implements OnInit {
         this.testing.set(false);
         this.cargar();
       },
-      error: () => {
+      error: (err) => {
         this.testOk.set(false);
-        this.testMsg.set('Error al enviar el correo de prueba.');
+        this.testMsg.set(this.extractApiError(err));
         this.testing.set(false);
       },
     });

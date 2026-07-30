@@ -118,7 +118,7 @@ import {
                 [ngClass]="vista() === kpi.vista ? 'ring-2 ring-indigo-400' : ''"
                 (click)="vista.set(kpi.vista)">
                 <p class="text-xs text-gray-400">{{ kpi.label }}</p>
-                <p class="text-xl font-bold mt-1" [ngClass]="kpi.text ?? 'text-gray-900'">{{ kpi.value }}</p>
+                <p class="text-xl font-bold mt-1" [ngClass]="kpi.text">{{ kpi.value }}</p>
               </button>
             }
           </div>
