@@ -1,1 +1,0 @@
-function s(r){if(!r)return"";let t=r.slice(0,10),[n,i,e]=t.split("-");return!n||!i||!e?r:`${e}/${i}/${n}`}function d(r){let t=r.trim();if(!t)return new Date().toISOString().slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(t))return t;let[n,i,e]=t.split("/");return!n||!i||!e?t:`${e.padStart(4,"0")}-${i.padStart(2,"0")}-${n.padStart(2,"0")}`}export{s as a,d as b};
