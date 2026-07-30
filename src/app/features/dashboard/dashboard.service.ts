@@ -163,7 +163,7 @@ export class DashboardService {
 
     if (status === 0) {
       return new Error(
-        'No se pudo conectar con el servidor. Verifica que el backend esté activo en http://localhost:3000.',
+        'No se pudo conectar con el servidor. Verifica que el backend esté activo (puerto 3000).',
       );
     }
     if (status === 403) {
