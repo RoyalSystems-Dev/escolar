@@ -30,13 +30,13 @@ const MATRICULAS = [
 ];
 
 async function login(page) {
-  await page.goto(`${BASE}/auth/login`);
+  await page.goto(`${BASE}/#/auth/login`);
   await page.getByRole('button', { name: 'Administrador' }).click();
-  await page.waitForURL('**/dashboard**', { timeout: 20000 });
+  await page.waitForURL('**/#/dashboard**', { timeout: 20000 });
 }
 
 async function crearMatricula(page, data) {
-  await page.goto(`${BASE}/matricula/nueva`);
+  await page.goto(`${BASE}/#/matricula/nueva`);
   await page.locator('h2', { hasText: 'Nueva Matrícula' }).waitFor();
 
   // Paso 1

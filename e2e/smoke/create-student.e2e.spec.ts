@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from '../helpers/auth.helper';
+import { gotoAppRoute } from '../helpers/routing.helper';
 
 test('crear nuevo estudiante desde expedientes', async ({ page }) => {
   const dni = '78901235';
@@ -7,7 +8,7 @@ test('crear nuevo estudiante desde expedientes', async ({ page }) => {
   const apellidos = 'Vega Salazar';
 
   await loginAsAdmin(page);
-  await page.goto('/estudiantes/expedientes');
+  await gotoAppRoute(page, '/estudiantes/expedientes');
   await page.getByRole('button', { name: /Nuevo Estudiante/i }).click();
   await expect(page.getByRole('heading', { name: 'Nuevo Estudiante' })).toBeVisible();
 

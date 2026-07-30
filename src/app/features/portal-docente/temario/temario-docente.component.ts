@@ -358,7 +358,7 @@ type PanelModo = 'ver' | 'editar';
 
                       @if (tieneContenido(c)) {
 
-                        <span class="badge badge-gray text-xs">{{ c.imagenesClase?.length || 0 }} img · contenido</span>
+                        <span class="badge badge-gray text-xs">{{ c.imagenesClase.length || 0 }} img · contenido</span>
 
                       }
 
@@ -518,7 +518,7 @@ type PanelModo = 'ver' | 'editar';
 
             }
 
-            @if (v.imagenesClase?.length) {
+            @if (v.imagenesClase.length) {
 
               <section>
 

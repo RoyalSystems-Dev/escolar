@@ -1,6 +1,6 @@
 ﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgClass, DecimalPipe, PercentPipe } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { LayoutService } from '../../core/layout/services/layout.service';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { DashboardService } from './dashboard.service';
@@ -19,7 +19,7 @@ interface RecentActivity {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, NgClass, DecimalPipe, PercentPipe],
+  imports: [RouterLink, NgClass],
   template: `
     <div class="space-y-6">
 

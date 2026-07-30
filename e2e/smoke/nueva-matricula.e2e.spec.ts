@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from '../helpers/auth.helper';
+import { gotoAppRoute } from '../helpers/routing.helper';
 
 test('crear nueva matricula desde el wizard', async ({ page }) => {
   const dniAlumno = '90345678';
@@ -8,7 +9,7 @@ test('crear nueva matricula desde el wizard', async ({ page }) => {
   const apellidoMaterno = 'Mamani';
 
   await loginAsAdmin(page);
-  await page.goto('/matricula/nueva');
+  await gotoAppRoute(page, '/matricula/nueva');
   await expect(page.locator('h2', { hasText: 'Nueva Matrícula' })).toBeVisible();
 
   // Paso 1: Estudiante

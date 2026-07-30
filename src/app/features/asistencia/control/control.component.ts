@@ -268,7 +268,7 @@ import {
     @if (viewMode() === 'dia') {
       <div class="flex flex-wrap gap-2 no-print">
         @for (d of r.diasEscolares; track d.fecha) {
-          @let cnt = r.resumenPorDia[d.fecha] ?? { F:0, T:0, J:0 };
+          @let cnt = r.resumenPorDia[d.fecha];
           @let total = cnt.F + cnt.T + cnt.J;
           <button (click)="toggleDia(d.fecha)"
             class="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm"

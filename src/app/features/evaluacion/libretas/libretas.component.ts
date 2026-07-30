@@ -388,7 +388,7 @@ import { LibretasService } from './libretas.service';
                     <div class="pt-3 border-t border-gray-200 text-center">
                       @if (lib.firmaDirector.firmado) {
                         <div class="text-indigo-600 text-xl mb-1" style="font-family:cursive;font-style:italic">
-                          {{ lib.firmaDirector.nombre.split(' ')[0] }} {{ lib.firmaDirector.nombre.split(' ')[2] ?? '' }}
+                          {{ lib.firmaDirector.nombre.split(' ')[0] }} {{ lib.firmaDirector.nombre.split(' ')[2] || '' }}
                         </div>
                       } @else { <div class="h-6"></div> }
                       <div class="h-px bg-gray-400 mx-6 mb-1"></div>
@@ -442,7 +442,7 @@ import { LibretasService } from './libretas.service';
                     <div class="pt-3 border-t border-gray-200 text-center">
                       @if (lib.firmaTutor.firmado) {
                         <div class="text-purple-600 text-xl mb-1" style="font-family:cursive;font-style:italic">
-                          {{ lib.firmaTutor.nombre.split(' ')[0] }} {{ lib.firmaTutor.nombre.split(' ')[2] ?? '' }}
+                          {{ lib.firmaTutor.nombre.split(' ')[0] }} {{ lib.firmaTutor.nombre.split(' ')[2] || '' }}
                         </div>
                       } @else { <div class="h-6"></div> }
                       <div class="h-px bg-gray-400 mx-6 mb-1"></div>
