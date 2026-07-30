@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from '../helpers/auth.helper';
+import { gotoAppRoute } from '../helpers/routing.helper';
 
 test.describe('Nueva matrícula', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/matricula/nueva');
+    await gotoAppRoute(page, '/matricula/nueva');
     await page.locator('h2', { hasText: 'Nueva Matrícula' }).waitFor();
   });
 
