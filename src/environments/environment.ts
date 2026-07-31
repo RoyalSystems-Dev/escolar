@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://royal-escolar-api.rsdev.site/api/v1',
+  // apiUrl: 'https://royal-escolar-api.rsdev.site/api/v1',
+  apiUrl: 'http://royal-escolar-api.rsdev.site/api/v1',
   appName: 'EscolarERP',
   version: '1.0.0',
   tokenExpirationWarning: 300,
