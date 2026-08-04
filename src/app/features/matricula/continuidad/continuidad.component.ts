@@ -108,20 +108,20 @@ import {
 
   <!-- ── CONFIG BAR (filtros compartidos por pestaña activa) ── -->
   <div class="card p-4">
-    <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      <div class="relative flex-1 w-full">
-        <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" style="font-size:18px">search</span>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="relative min-w-0">
+        <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:18px">search</span>
         <input class="form-input pl-10 w-full" placeholder="Buscar por nombre, código o DNI..."
           [(ngModel)]="busquedaVal" (ngModelChange)="onBusquedaChange($event)">
       </div>
-      <select class="form-input w-full sm:w-44"
+      <select class="form-input w-full min-w-0"
         [(ngModel)]="filtroNivelVal" (ngModelChange)="onFiltroNivelChange($event)">
         <option value="todos">Todos los niveles</option>
         <option value="inicial">Inicial</option>
         <option value="primaria">Primaria</option>
         <option value="secundaria">Secundaria</option>
       </select>
-      <select class="form-input w-full sm:w-44"
+      <select class="form-input w-full min-w-0"
         [(ngModel)]="filtroSitVal" (ngModelChange)="onFiltroSitChange($event)">
         <option value="todos">Todas las situaciones</option>
         <option value="promovido">Promovido</option>
@@ -129,17 +129,17 @@ import {
         <option value="retirado">Retirado</option>
         <option value="egresado">Egresado</option>
       </select>
-      @if (hayFiltrosActivos()) {
-        <button type="button" class="btn btn-secondary text-sm whitespace-nowrap" (click)="limpiarFiltros()">
+    </div>
+    @if (hayFiltrosActivos()) {
+      <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
+        <p class="text-xs text-indigo-600">
+          Filtros activos · {{ resultadosTabActiva() }} resultado{{ resultadosTabActiva() !== 1 ? 's' : '' }}
+          en {{ tabLabel() }}
+        </p>
+        <button type="button" class="btn btn-secondary btn-sm whitespace-nowrap" (click)="limpiarFiltros()">
           <span class="icon icon-sm">filter_alt_off</span> Limpiar
         </button>
-      }
-    </div>
-      @if (hayFiltrosActivos()) {
-      <p class="text-xs text-indigo-600 mt-2">
-        Filtros activos · {{ resultadosTabActiva() }} resultado{{ resultadosTabActiva() !== 1 ? 's' : '' }}
-        en {{ tabLabel() }}
-      </p>
+      </div>
     }
     <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-gray-100">
       <p class="text-xs text-gray-500">

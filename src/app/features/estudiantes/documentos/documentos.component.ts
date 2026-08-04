@@ -36,13 +36,15 @@ import { ApiStudentDocumentsResponse } from '../../../core/api/api.models';
             <div class="flex gap-2">
               <input
                 class="form-input flex-1"
-                [(ngModel)]="busqueda"
+                [ngModel]="busqueda()"
+                (ngModelChange)="onBusquedaChange($event)"
                 placeholder="Nombre, DNI, código o email"
-                (keyup.enter)="buscar()"
               >
-              <button class="btn btn-primary" (click)="buscar()" [disabled]="loading()">
-                <span class="icon icon-sm">search</span>
-              </button>
+              @if (busqueda()) {
+                <button class="btn btn-secondary" type="button" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+                  <span class="icon icon-sm">close</span>
+                </button>
+              }
             </div>
             @if (loading()) {
               <p class="text-xs text-indigo-500">Cargando...</p>
@@ -67,7 +69,11 @@ import { ApiStudentDocumentsResponse } from '../../../core/api/api.models';
                 </div>
               } @else if (!resultados().length) {
                 <div class="p-8 text-center text-sm text-gray-400">
-                  No hay estudiantes registrados en la base de datos
+                  @if (busqueda().trim()) {
+                    Sin resultados para "{{ busqueda() }}"
+                  } @else {
+                    No hay estudiantes registrados en la base de datos
+                  }
                 </div>
               }
               @for (e of resultados(); track e.id) {
@@ -248,7 +254,8 @@ export class DocumentosComponent implements OnInit {
   readonly loading = this.expedientesSvc.loading;
   readonly error = this.expedientesSvc.error;
 
-  busqueda = '';
+  readonly busqueda = signal('');
+
   readonly loadingDocs = signal(false);
   readonly docsError = signal('');
   readonly documentosAlumno = signal<ApiStudentDocumentsResponse | null>(null);
@@ -259,7 +266,24 @@ export class DocumentosComponent implements OnInit {
   readonly visorUrl = signal('');
   readonly visorTitulo = signal('');
 
-  readonly resultados = computed(() => this.expedientesSvc.estudiantes());
+  readonly resultados = computed(() => {
+    const q = this.busqueda().trim().toLowerCase();
+    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+    return this.expedientesSvc.estudiantes().filter((e) => {
+      if (!tokens.length) return true;
+      const haystack = [
+        e.nombres,
+        e.apellidos,
+        e.dni,
+        e.codigo,
+        e.email,
+        e.grado,
+        `${e.apellidos} ${e.nombres}`,
+        `${e.nombres} ${e.apellidos}`,
+      ].join(' ').toLowerCase();
+      return tokens.every((t) => haystack.includes(t));
+    });
+  });
 
   readonly filas = computed(() => {
     const data = this.documentosAlumno();
@@ -295,11 +319,18 @@ export class DocumentosComponent implements OnInit {
     this.expedientesSvc.load();
   }
 
-  buscar(): void {
-    this.expedientesSvc.search(this.busqueda);
-    this.seleccionado.set(null);
-    this.documentosAlumno.set(null);
-    this.docsError.set('');
+  onBusquedaChange(value: string): void {
+    this.busqueda.set(value);
+    const sel = this.seleccionado();
+    if (sel && !this.resultados().some((e) => e.id === sel.id)) {
+      this.seleccionado.set(null);
+      this.documentosAlumno.set(null);
+      this.docsError.set('');
+    }
+  }
+
+  limpiarBusqueda(): void {
+    this.busqueda.set('');
   }
 
   docsEntregados(e: Estudiante): number {

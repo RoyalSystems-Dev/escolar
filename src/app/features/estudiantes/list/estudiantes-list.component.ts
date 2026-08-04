@@ -202,18 +202,18 @@ const CATALOGO_DEFAULT: Record<string, DocRequerido[]> = {
           <div class="relative lg:col-span-2">
             <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</span>
             <input class="form-input pl-10 bg-gray-50" type="text" placeholder="Buscar por nombre, DNI o codigo..."
-              [(ngModel)]="filtro.q" (ngModelChange)="paginaActual.set(1)">
+              [ngModel]="filtroQ()" (ngModelChange)="filtroQ.set($event); paginaActual.set(1)">
           </div>
           <div class="relative">
             <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">school</span>
-            <select class="form-select pl-10 bg-gray-50" [(ngModel)]="filtro.grado" (ngModelChange)="paginaActual.set(1)">
+            <select class="form-select pl-10 bg-gray-50" [ngModel]="filtroGrado()" (ngModelChange)="filtroGrado.set($event); paginaActual.set(1)">
               <option value="">Todos los grados</option>
               @for (g of grados; track g) { <option [value]="g">{{ g }}</option> }
             </select>
           </div>
           <div class="relative">
             <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">toggle_on</span>
-            <select class="form-select pl-10 bg-gray-50" [(ngModel)]="filtro.estado" (ngModelChange)="paginaActual.set(1)">
+            <select class="form-select pl-10 bg-gray-50" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); paginaActual.set(1)">
               <option value="">Todos los estados</option>
               <option value="activo">Activo</option>
               <option value="inactivo">Inactivo</option>
@@ -288,7 +288,7 @@ const CATALOGO_DEFAULT: Record<string, DocRequerido[]> = {
                 <div class="flex flex-col items-center gap-2 text-gray-300">
                   <span class="icon icon-2xl">search_off</span>
                   <p class="text-sm text-gray-400">Sin resultados para los filtros aplicados</p>
-                  <button class="btn btn-ghost text-xs" (click)="filtro.q=''; filtro.grado=''; filtro.estado=''">Limpiar filtros</button>
+                  <button class="btn btn-ghost text-xs" (click)="limpiarFiltros()">Limpiar filtros</button>
                 </div>
               </td></tr>
             }
@@ -961,7 +961,9 @@ export class EstudiantesListComponent implements OnInit {
     { id:'documentos',      label:'Documentos',    icon:'folder'         },
   ];
 
-  filtro = { q: '', grado: '', estado: '' };
+  readonly filtroQ = signal('');
+  readonly filtroGrado = signal('');
+  readonly filtroEstado = signal('');
 
   grados = ['1° Primaria','2° Primaria','3° Primaria','4° Primaria','5° Primaria','6° Primaria',
             '1° Secundaria','2° Secundaria','3° Secundaria','4° Secundaria','5° Secundaria'];
@@ -975,7 +977,9 @@ export class EstudiantesListComponent implements OnInit {
 
   // ── Computed ──
   readonly filtrados = computed(() => {
-    const { q, grado, estado } = this.filtro;
+    const q = this.filtroQ();
+    const grado = this.filtroGrado();
+    const estado = this.filtroEstado();
     const query = q.toLowerCase();
     return this.expedientesSvc.estudiantes().filter(e => {
       const matchQ = !query || `${e.nombres} ${e.apellidos} ${e.dni} ${e.codigo}`.toLowerCase().includes(query);
@@ -1015,9 +1019,9 @@ export class EstudiantesListComponent implements OnInit {
   exportarCsv(): void {
     this.exportando.set(true);
     this.expedientesSvc.exportCsv({
-      q: this.filtro.q,
-      grado: this.filtro.grado,
-      estado: this.filtro.estado,
+      q: this.filtroQ(),
+      grado: this.filtroGrado(),
+      estado: this.filtroEstado(),
     }).subscribe({
       next: (blob) => {
         const stamp = new Date().toISOString().slice(0, 10);
@@ -1034,6 +1038,13 @@ export class EstudiantesListComponent implements OnInit {
         alert('No se pudo exportar el padrón. Verifique permisos y conexión con el servidor.');
       },
     });
+  }
+
+  limpiarFiltros(): void {
+    this.filtroQ.set('');
+    this.filtroGrado.set('');
+    this.filtroEstado.set('');
+    this.paginaActual.set(1);
   }
 
   iniciales(n: string, a: string) { return ((n?.[0] ?? '') + (a?.[0] ?? '')).toUpperCase(); }
