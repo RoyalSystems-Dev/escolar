@@ -115,10 +115,9 @@ import {
             <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">search</span>
             <input
               class="form-input pl-10 w-full bg-gray-50"
-              placeholder="Título o lugar..."
+              placeholder="Título, lugar, responsable o descripción..."
               [ngModel]="filtro().busqueda"
               (ngModelChange)="setFiltro('busqueda', $event)"
-              (keyup.enter)="cargar()"
             />
           </div>
         </div>
@@ -375,6 +374,8 @@ export class EventosComponent implements OnInit {
 
   form = this.formVacio();
 
+  private busquedaTimer: ReturnType<typeof setTimeout> | null = null;
+
   readonly eventosFiltrados = computed(() => {
     let list = this._eventos();
     const dia = this.diaSeleccionado();
@@ -384,7 +385,7 @@ export class EventosComponent implements OnInit {
     const q = this.filtro().busqueda.toLowerCase().trim();
     if (q) {
       list = list.filter((e) =>
-        `${e.titulo} ${e.lugar} ${e.responsable}`.toLowerCase().includes(q),
+        `${e.titulo} ${e.lugar} ${e.responsable} ${e.descripcion}`.toLowerCase().includes(q),
       );
     }
     return list;
@@ -453,10 +454,13 @@ export class EventosComponent implements OnInit {
     valor: string,
   ): void {
     this.filtro.update((f) => ({ ...f, [campo]: valor }));
-    if (campo !== 'busqueda') {
-      this.diaSeleccionado.set('');
-      this.cargar();
+    if (campo === 'busqueda') {
+      if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+      this.busquedaTimer = setTimeout(() => this.cargar(), 350);
+      return;
     }
+    this.diaSeleccionado.set('');
+    this.cargar();
   }
 
   seleccionarDia(iso: string): void {

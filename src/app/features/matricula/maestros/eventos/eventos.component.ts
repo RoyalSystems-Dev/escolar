@@ -88,17 +88,20 @@ import { Nivel } from '../../../administracion/institucional/institucional.model
           <span class="icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">search</span>
           <input
             class="form-input pl-10 w-full bg-gray-50"
-            [(ngModel)]="filtroBusqueda"
-            (keyup.enter)="cargar()"
+            [ngModel]="filtroBusqueda()"
+            (ngModelChange)="onBusquedaChange($event)"
+            (keyup.enter)="buscar()"
             placeholder="Título, lugar, responsable..."
           />
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0 pb-0.5">
-        <button type="button" class="btn btn-secondary btn-sm" (click)="cargar()">
-          <span class="icon icon-sm">search</span> Buscar
-        </button>
-        @if (filtroMes || filtroTipo || filtroEstado || filtroBusqueda) {
+        @if (filtroBusqueda()) {
+          <button type="button" class="btn btn-ghost btn-sm" (click)="limpiarBusqueda()" title="Limpiar búsqueda">
+            <span class="icon icon-sm">close</span>
+          </button>
+        }
+        @if (filtroMes || filtroTipo || filtroEstado || filtroBusqueda()) {
           <button type="button" class="btn btn-ghost btn-sm" (click)="limpiarFiltros()">Limpiar</button>
         }
         <p class="text-xs text-gray-400 whitespace-nowrap">{{ eventos().length }} evento(s)</p>
@@ -122,7 +125,7 @@ import { Nivel } from '../../../administracion/institucional/institucional.model
     } @else if (!eventos().length) {
       <div class="p-10 text-center text-gray-500 text-sm">
         No hay eventos para los filtros seleccionados.
-        @if (filtroMes || filtroTipo || filtroEstado || filtroBusqueda) {
+        @if (filtroMes || filtroTipo || filtroEstado || filtroBusqueda()) {
           <button type="button" class="btn btn-ghost btn-sm mt-2" (click)="limpiarFiltros()">Limpiar filtros</button>
         }
       </div>
@@ -390,7 +393,9 @@ export class MaestrosEventosComponent implements OnInit {
   filtroMes = '';
   filtroTipo = '';
   filtroEstado = '';
-  filtroBusqueda = '';
+  readonly filtroBusqueda = signal('');
+
+  private busquedaTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly mesesOpts = MESES_EVENTOS;
   readonly tiposOpts = TIPOS_EVENTO;
@@ -536,7 +541,7 @@ export class MaestrosEventosComponent implements OnInit {
       mes: this.filtroMes || undefined,
       tipo: this.filtroTipo || undefined,
       estado: this.filtroEstado || undefined,
-      busqueda: this.filtroBusqueda.trim() || undefined,
+      busqueda: this.filtroBusqueda().trim() || undefined,
     }).subscribe({
       next: (items) => this.eventos.set(items),
       error: (err) => {
@@ -550,11 +555,30 @@ export class MaestrosEventosComponent implements OnInit {
     });
   }
 
+  onBusquedaChange(value: string, immediate = false): void {
+    this.filtroBusqueda.set(value);
+    if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+    const ejecutar = () => this.cargar();
+    if (immediate) {
+      ejecutar();
+    } else {
+      this.busquedaTimer = setTimeout(ejecutar, 350);
+    }
+  }
+
+  buscar(): void {
+    this.onBusquedaChange(this.filtroBusqueda(), true);
+  }
+
+  limpiarBusqueda(): void {
+    this.onBusquedaChange('', true);
+  }
+
   limpiarFiltros(): void {
     this.filtroMes = '';
     this.filtroTipo = '';
     this.filtroEstado = '';
-    this.filtroBusqueda = '';
+    this.filtroBusqueda.set('');
     this.cargar();
   }
 

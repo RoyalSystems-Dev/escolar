@@ -87,10 +87,11 @@ interface DocenteFormState {
           </div>
           <input
             class="flex-1 min-w-0 border-0 bg-transparent px-3 py-3.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-0"
-            [(ngModel)]="filtroBusqueda"
+            [ngModel]="filtroBusqueda()"
+            (ngModelChange)="onBusquedaChange($event)"
             (keyup.enter)="buscar()"
             placeholder="Nombre, apellido, DNI, email, usuario o especialización..." />
-          @if (filtroBusqueda) {
+          @if (filtroBusqueda()) {
             <button type="button" class="px-2 text-gray-400 hover:text-gray-600 transition-colors" (click)="limpiarBusqueda()" title="Limpiar">
               <span class="icon icon-sm">close</span>
             </button>
@@ -423,8 +424,10 @@ export class MaestrosDocentesComponent implements OnInit {
   readonly especialidades = ESPECIALIDADES_DOCENTE;
 
   filtroEstado = '';
-  filtroBusqueda = '';
+  readonly filtroBusqueda = signal('');
   anioEscolar = 2026;
+
+  private busquedaTimer: ReturnType<typeof setTimeout> | null = null;
 
   form: DocenteFormState = this.formVacio();
 
@@ -458,7 +461,7 @@ export class MaestrosDocentesComponent implements OnInit {
 
   cargar(page = this.paginaActual()): void {
     this.error.set('');
-    const busqueda = this.filtroBusqueda.trim();
+    const busqueda = this.filtroBusqueda().trim();
     this.svc.list({
       estado: this.filtroEstado || undefined,
       busqueda: busqueda || undefined,
@@ -482,14 +485,26 @@ export class MaestrosDocentesComponent implements OnInit {
     this.cargar(1);
   }
 
+  onBusquedaChange(value: string, immediate = false): void {
+    this.filtroBusqueda.set(value);
+    if (this.busquedaTimer) clearTimeout(this.busquedaTimer);
+    const ejecutar = () => {
+      this.paginaActual.set(1);
+      this.cargar(1);
+    };
+    if (immediate) {
+      ejecutar();
+    } else {
+      this.busquedaTimer = setTimeout(ejecutar, 350);
+    }
+  }
+
   buscar(): void {
-    this.paginaActual.set(1);
-    this.cargar(1);
+    this.onBusquedaChange(this.filtroBusqueda(), true);
   }
 
   limpiarBusqueda(): void {
-    this.filtroBusqueda = '';
-    this.buscar();
+    this.onBusquedaChange('', true);
   }
 
   irPagina(page: number): void {
