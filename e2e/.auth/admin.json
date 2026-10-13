@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4200",
+      "localStorage": [
+        {
+          "name": "current_user",
+          "value": "{\"id\":\"1\",\"nombre\":\"Carlos\",\"apellido\":\"Mendoza Torres\",\"email\":\"admin@escolar.pe\",\"username\":\"admin\",\"roles\":[{\"id\":\"ADMIN\",\"codigo\":\"ADMIN\",\"nombre\":\"ADMIN\",\"nivel\":1}],\"roleAssignments\":[{\"id\":19,\"roleCodigo\":\"ADMIN\",\"roleLabel\":\"Administrador\",\"ambito\":\"IE\",\"dreCodigo\":null,\"ugelCodigo\":null,\"institutionId\":1,\"esPrincipal\":true,\"activo\":true,\"motivo\":\"Migración desde rol único legacy\",\"createdAt\":\"2026-09-22T02:53:39.755Z\",\"revokedAt\":null}],\"ambitos\":[\"IE\"],\"rolPrincipal\":\"ADMIN\",\"institutionId\":1,\"permisos\":[\"dashboard.ver\",\"dashboard.kpis\",\"dashboard.reportes\",\"matricula.ver\",\"matricula.crear\",\"matricula.editar\",\"matricula.anular\",\"matricula.vacantes\",\"matricula.exportar\",\"asistencia.ver\",\"asistencia.registrar\",\"asistencia.editar\",\"asistencia.reportes\",\"asistencia.exportar\",\"evaluacion.ver\",\"evaluacion.registrar\",\"evaluacion.editar\",\"evaluacion.aprobar\",\"evaluacion.reportes\",\"evaluacion.exportar\",\"tesoreria.ver\",\"tesoreria.registrar\",\"tesoreria.editar\",\"tesoreria.conceptos\",\"tesoreria.reportes\",\"tesoreria.exportar\",\"estudiantes.ver\",\"estudiantes.crear\",\"estudiantes.editar\",\"estudiantes.eliminar\",\"estudiantes.expediente\",\"estudiantes.exportar\",\"docentes.ver\",\"docentes.crear\",\"docentes.editar\",\"docentes.horario\",\"horarios.ver\",\"horarios.crear\",\"horarios.publicar\",\"comunicados.ver\",\"comunicados.enviar\",\"comunicados.eliminar\",\"biblioteca.ver\",\"biblioteca.gestionar\",\"admin.usuarios\",\"admin.roles\",\"admin.institucional\",\"admin.reportes\",\"matricula.aprobar\",\"matricula.retiro\",\"matricula.reingreso\",\"matricula.evaluacion\",\"matricula.retroalimentacion\",\"matricula.historial\",\"estudiantes.representantes\",\"estudiantes.documentos\",\"traslados.solicitar\",\"traslados.ver\",\"traslados.resolver\",\"traslados.aprobar_destino\",\"calendarizacion.ver\",\"calendarizacion.gestionar\",\"curricula.ver\",\"curricula.gestionar\",\"evaluacion.configurar\"],\"esAdmin\":true,\"estado\":\"activo\",\"ultimoAcceso\":\"2026-10-12T20:12:23.879Z\",\"requiereCambioPassword\":false}"
+        },
+        {
+          "name": "refresh_token",
+          "value": "refresh_1_1791836390"
+        },
+        {
+          "name": "access_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbkBlc2NvbGFyLnBlIiwibm9tYnJlIjoiQ2FybG9zIE1lbmRvemEgVG9ycmVzIiwicm9sZXMiOlsiQURNSU4iXSwiaW5zdGl0dXRpb25JZCI6MSwic3YiOjAsImlhdCI6MTc5MTgzNjM5MCwiZXhwIjoxNzkxOTIyNzkwfQ.mock_signature"
+        }
+      ]
+    }
+  ]
+}
