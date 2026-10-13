@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { TenantContextService } from '../../../core/tenant/tenant-context.service';
+import { markTenantReloadReady, setupTenantReload } from '../../../core/tenant/tenant-reload.util';
 import { OverlayPortalDirective } from '../../../core/overlay/overlay-portal.directive';
 import {
   etiquetaGradoConNivel,
@@ -1435,6 +1437,11 @@ function gradosIncluyen(grado: string, grados: string[]): boolean {
 export class CurriculaComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   private readonly router = inject(Router);
+  private readonly tenant = inject(TenantContextService);
+  private readonly _tenantReloadReady = setupTenantReload(
+    () => this.recargarPorInstitucion(),
+    { onBeforeReload: () => this.limpiarVistaInstitucion() },
+  );
   readonly curriculaSvc = inject(CurriculaService);
   readonly asignacionSvc = inject(AsignacionService);
   readonly etiquetaGrado = etiquetaGradoConNivel;
@@ -1673,6 +1680,13 @@ export class CurriculaComponent implements OnInit {
   // ── Methods ───────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.layout.setTitle('Gestión Curricular');
+    if (!this.tenant.requiresSelection()) {
+      this.recargarPorInstitucion();
+    }
+    markTenantReloadReady(this._tenantReloadReady);
+  }
+
+  private recargarPorInstitucion(): void {
     this.periodosSvc.resolveContext().subscribe({
       next: (ctx) => {
         this.anioEscolarVigente = ctx.anioEscolar;
@@ -1680,6 +1694,30 @@ export class CurriculaComponent implements OnInit {
       },
       error: () => this.cargarCatalogoInicial(),
     });
+  }
+
+  private limpiarVistaInstitucion(): void {
+    this._curriculas.set([]);
+    this._areas.set([]);
+    this._cursos.set([]);
+    this._competencias.set([]);
+    this._capacidades.set([]);
+    this._indicadores.set([]);
+    this._asignaciones.set([]);
+    this._mallaGrados.set([]);
+    this._mallaTotales.set({});
+    this._mallaDocentes.set(null);
+    this.curriculaSelId.set(null);
+    this.detalleCache.set({});
+    this.detalleExpandidoId.set(null);
+    this.cursoSelId.set(null);
+    this._docentesAsig.set([]);
+    this._seccionesPorGrado.set({});
+    this._asignacionCtxLoaded.set(false);
+    this.modalOpen.set(false);
+    this.areaModalOpen.set(false);
+    this.cursoModalOpen.set(false);
+    this.mallaAsigModalOpen.set(false);
   }
 
   onCfgTabClick(id: CfgTab): void {

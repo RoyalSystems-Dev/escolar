@@ -13,7 +13,9 @@ async function globalSetup(config: FullConfig): Promise<void> {
   const page = await context.newPage();
 
   await page.goto(`${baseURL}/#/auth/login`);
-  await page.getByRole('button', { name: 'Administrador' }).click();
+  await page.getByLabel('Usuario').fill('admin');
+  await page.getByLabel('Contrasena').fill('admin123');
+  await page.getByRole('button', { name: 'Ingresar al Sistema' }).click();
   await page.waitForURL('**/#/dashboard**', { timeout: 60_000 });
 
   await context.storageState({ path: authFile });

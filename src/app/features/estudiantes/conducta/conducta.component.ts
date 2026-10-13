@@ -13,6 +13,7 @@ import {
   Incidente,
   LUGARES,
   MEDIDAS,
+  resumenAlumnoFromIncidentes,
   NIVEL_CFG,
   NivelConducta,
   ResumenAlumno,
@@ -57,9 +58,9 @@ import {
     </button>
   </div>
 
-  <!-- KPIs -->
+  <!-- KPIs (misma base filtrada que la tabla; atenuados mientras recarga) -->
   @let k = kpis();
-  <div class="grid grid-cols-5 gap-4">
+  <div class="grid grid-cols-5 gap-4 transition-opacity" [class.opacity-45]="loading()" [class.pointer-events-none]="loading()">
     <div class="card p-4">
       <div class="text-xs text-gray-500 font-medium uppercase tracking-wide">Total registros</div>
       <div class="text-2xl font-bold text-gray-800 mt-1">{{ k.total }}</div>
@@ -416,11 +417,15 @@ import {
           <div class="flex-1 overflow-y-auto p-4 space-y-4">
             <!-- Resumen -->
             <div class="grid grid-cols-2 gap-3">
-              @for (stat of alumnoStats(datos.res); track stat.label) {
-                <div class="rounded-xl p-3 text-center border" [ngClass]="stat.bg">
-                  <div class="text-xl font-extrabold" [ngClass]="stat.color">{{ stat.val }}</div>
-                  <div class="text-xs font-medium mt-0.5" [ngClass]="stat.color">{{ stat.label }}</div>
-                </div>
+              @if (loadingAlumnoDetalle()) {
+                <div class="col-span-2 py-6 text-center text-sm text-indigo-500">Cargando historial real…</div>
+              } @else {
+                @for (stat of alumnoStats(datos.res); track stat.label) {
+                  <div class="rounded-xl p-3 text-center border" [ngClass]="stat.bg">
+                    <div class="text-xl font-extrabold" [ngClass]="stat.color">{{ stat.val }}</div>
+                    <div class="text-xs font-medium mt-0.5" [ngClass]="stat.color">{{ stat.label }}</div>
+                  </div>
+                }
               }
             </div>
             <!-- Barra visual -->
@@ -658,6 +663,7 @@ export class ConductaComponent implements OnInit {
   totalPaginasAlumnos = signal(1);
   alumnos      = signal<AlumnoConducta[]>([]);
   alumnoIncidentes = signal<Incidente[]>([]);
+  loadingAlumnoDetalle = signal(false);
   loadError    = signal('');
   vista        = signal<'incidentes' | 'alumnos'>('incidentes');
   busqueda     = signal('');
@@ -754,9 +760,16 @@ export class ConductaComponent implements OnInit {
   alumnoSelDatos = computed(() => {
     const id = this.selAlumnoId();
     if (!id) return null;
-    const res = this.resumen().find((r) => r.alumnoId === id);
+    const row = this.resumen().find((r) => r.alumnoId === id);
+    const incidentes = this.alumnoIncidentes();
+    const res =
+      !this.loadingAlumnoDetalle() && incidentes.length
+        ? resumenAlumnoFromIncidentes(incidentes, row ?? undefined)
+        : row
+          ? resumenAlumnoFromIncidentes([], row) ?? row
+          : null;
     if (!res) return null;
-    return { res, incidentes: this.alumnoIncidentes() };
+    return { res, incidentes };
   });
 
   hayFiltros = computed(() =>
@@ -900,9 +913,14 @@ export class ConductaComponent implements OnInit {
   abrirDetalleAlumno(id: number) {
     this.selAlumnoId.set(id);
     this.alumnoIncidentes.set([]);
+    this.loadingAlumnoDetalle.set(true);
     this.conductaService.loadStudentIncidents(id).subscribe({
       next: (items) => this.alumnoIncidentes.set(items),
-      error: () => this.mostrarToast('No se pudo cargar el historial del alumno.', 'err'),
+      error: () => {
+        this.loadingAlumnoDetalle.set(false);
+        this.mostrarToast('No se pudo cargar el historial del alumno.', 'err');
+      },
+      complete: () => this.loadingAlumnoDetalle.set(false),
     });
   }
 
@@ -1076,9 +1094,15 @@ export class ConductaComponent implements OnInit {
   onCampoFormChange(key: string, value?: string | TipoIncidente): void {
     if (value !== undefined) {
       switch (key) {
-        case 'tipo':
-          this.fTipoModal.set(value as TipoIncidente);
+        case 'tipo': {
+          const tipo = value as TipoIncidente;
+          this.fTipoModal.set(tipo);
+          const sugeridas = MEDIDAS[tipo];
+          if (sugeridas?.length && !this.fMedida().trim()) {
+            this.fMedida.set(sugeridas[0]);
+          }
           break;
+        }
         case 'descripcion':
           this.fDescripcion.set(String(value));
           break;

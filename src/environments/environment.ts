@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  enableDemoLogin: false,
   apiUrl: `${window.location.protocol}//royal-escolar-api.rsdev.site/api/v1`,
   appName: 'EscolarERP',
   version: '1.0.0',

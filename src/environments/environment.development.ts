@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
+  enableDemoLogin: true,
   apiUrl: '/api/v1',
   appName: 'EscolarERP',
   version: '1.0.0',

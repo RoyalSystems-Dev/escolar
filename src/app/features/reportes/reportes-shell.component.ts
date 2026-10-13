@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { map } from 'rxjs/operators';
@@ -69,7 +69,15 @@ import { REPORTES_NAV_ITEMS, type ReporteNavItem } from './reportes-nav.model';
     </div>
   `,
 })
-export class ReportesShellComponent implements OnInit {
+export class ReportesShellComponent {
+  private static readonly TITLE_BY_MODULO: Record<string, string> = {
+    territorial: 'Reportes UGEL / DRE',
+    matricula: 'Reportes de matrícula',
+    asistencia: 'Reportes de asistencia',
+    evaluacion: 'Reportes de evaluación',
+    tesoreria: 'Reportes financieros',
+  };
+
   private readonly layout = inject(LayoutService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
@@ -79,8 +87,13 @@ export class ReportesShellComponent implements OnInit {
     { initialValue: '' },
   );
 
-  ngOnInit(): void {
-    this.layout.setTitle('Reportería');
+  constructor() {
+    effect(() => {
+      const m = this.modulo();
+      this.layout.setTitle(
+        ReportesShellComponent.TITLE_BY_MODULO[m] ?? 'Reportería',
+      );
+    });
   }
 
   get tabs(): ReporteNavItem[] {

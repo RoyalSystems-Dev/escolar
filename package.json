@@ -3,8 +3,10 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "node scripts/check-dev-api.mjs && ng serve",
+    "start:api": "npm run start:dev --prefix ../escolar-backend",
     "build": "ng build",
+    "build:qa": "ng build --configuration qa",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "qa:install": "playwright install chromium",

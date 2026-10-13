@@ -1,4 +1,12 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import {
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+  OnInit,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LayoutService } from '../../services/layout.service';
@@ -22,19 +30,105 @@ import {
       }
       <h1 class="text-base font-semibold text-gray-800 flex-1 truncate">{{ layout.pageTitle() }}</h1>
       @if (auth.isSiagie()) {
-        <div class="hidden sm:flex items-center gap-2 max-w-[min(100%,20rem)] shrink-0">
-          <label class="sr-only" for="tenant-ie-select">Institución educativa</label>
-          <select
+        <div class="relative shrink-0 min-w-0 max-w-[min(100%,20rem)] sm:max-w-[22rem]">
+          @if (ieOpen()) {
+            <div class="fixed inset-0 z-40" (click)="closeIePanel()" aria-hidden="true"></div>
+          }
+          <button
+            type="button"
             id="tenant-ie-select"
-            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 truncate max-w-full bg-white"
-            [ngModel]="tenant.activeInstitutionId() ?? ''"
-            (ngModelChange)="onInstitucionChange($event)"
-            [class.border-amber-400]="tenant.requiresSelection()">
-            <option value="">— Seleccionar IE —</option>
-            @for (ie of instituciones(); track ie.id) {
-              <option [value]="ie.id">{{ ie.siglas }} · {{ ie.nombre }} ({{ ie.alumnos }} alumnos)</option>
+            class="flex items-center gap-2 w-full min-w-0 rounded-xl border bg-white px-2.5 py-2 text-left shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/30"
+            [class.border-amber-300]="tenant.requiresSelection()"
+            [class.ring-2]="tenant.requiresSelection()"
+            [class.ring-amber-100]="tenant.requiresSelection()"
+            [class.border-gray-200]="!tenant.requiresSelection()"
+            (click)="toggleIePanel()"
+            [attr.aria-expanded]="ieOpen()"
+            aria-haspopup="listbox">
+            <span class="icon icon-sm text-indigo-600 shrink-0">school</span>
+            @if (selectedInstitucion(); as ie) {
+              <span class="badge badge-indigo text-[10px] font-bold shrink-0">{{ ie.siglas }}</span>
+              <span class="truncate text-sm font-medium text-gray-800 min-w-0">{{ ie.nombre }}</span>
+              <span class="hidden md:inline text-[11px] text-gray-500 shrink-0 tabular-nums">{{ ie.alumnos }} al.</span>
+            } @else {
+              <span class="truncate text-sm font-medium text-amber-800">Seleccionar institución</span>
             }
-          </select>
+            <span class="icon icon-sm text-gray-400 shrink-0 ml-auto">{{ ieOpen() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+          @if (ieOpen()) {
+            <div
+              class="dropdown-menu left-0 right-auto w-[min(100vw-2rem,26rem)] max-h-[min(70vh,28rem)] flex flex-col p-0 overflow-hidden shadow-lg border border-gray-100"
+              role="listbox"
+              aria-label="Instituciones educativas">
+              <div class="px-3 py-2.5 border-b border-gray-100 bg-gray-50/80 shrink-0 space-y-1.5">
+                <div class="flex items-baseline justify-between gap-2">
+                  <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Buscar institución
+                  </div>
+                  <span class="text-[11px] text-gray-400 tabular-nums shrink-0">{{ ieListadoResumen() }}</span>
+                </div>
+                <div class="relative">
+                  <span class="icon icon-sm text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+                  <input
+                    #ieSearchInput
+                    type="search"
+                    class="form-input text-sm py-2 pl-9 pr-8"
+                    placeholder="Nombre, siglas, modular, UGEL, distrito…"
+                    autocomplete="off"
+                    [ngModel]="ieSearch()"
+                    (ngModelChange)="ieSearch.set($event)"
+                    (keydown)="onIeSearchKeydown($event)"
+                    (click)="$event.stopPropagation()"
+                  />
+                  @if (ieSearch()) {
+                    <button
+                      type="button"
+                      class="absolute right-1 top-1/2 -translate-y-1/2 btn-icon !w-7 !h-7"
+                      title="Limpiar búsqueda"
+                      (click)="ieSearch.set(''); $event.stopPropagation()">
+                      <span class="icon icon-sm text-gray-500">close</span>
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="overflow-y-auto flex-1 py-1">
+                @if (institucionesFiltradas().length === 0) {
+                  <p class="px-3 py-6 text-center text-sm text-gray-400">Sin coincidencias</p>
+                }
+                @for (ie of institucionesFiltradas(); track ie.id) {
+                  <button
+                    type="button"
+                    role="option"
+                    class="w-full text-left px-3 py-2.5 transition-colors hover:bg-indigo-50/80"
+                    [class.bg-indigo-50]="tenant.activeInstitutionId() === ie.id"
+                    [attr.aria-selected]="tenant.activeInstitutionId() === ie.id"
+                    (click)="selectInstitucion(ie.id)">
+                    <div class="flex items-start gap-2.5">
+                      <span class="badge badge-indigo text-[10px] font-bold mt-0.5 shrink-0 min-w-[2.5rem] justify-center">
+                        {{ ie.siglas }}
+                      </span>
+                      <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium text-gray-900 leading-snug line-clamp-2">{{ ie.nombre }}</div>
+                        <div class="text-[11px] text-gray-500 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                          @if (ie.codigoModular) {
+                            <span>Mod. {{ ie.codigoModular }}</span>
+                          }
+                          @if (ie.ugel) {
+                            <span>{{ ie.ugel }}</span>
+                          }
+                        </div>
+                      </div>
+                      <span
+                        class="text-[11px] font-semibold tabular-nums text-gray-600 bg-gray-100 rounded-full px-2 py-0.5 shrink-0"
+                        title="Alumnos activos">
+                        {{ ie.alumnos }}
+                      </span>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
       }
       <div class="flex items-center gap-1">
@@ -107,8 +201,47 @@ export class HeaderComponent implements OnInit {
   readonly tenant = inject(TenantContextService);
   private readonly directorio = inject(DirectorioInstitucionesService);
   readonly instituciones = signal<InstitucionDirectorio[]>([]);
+  ieOpen = signal(false);
+  ieSearch = signal('');
   notifOpen = signal(false);
   userOpen  = signal(false);
+
+  readonly selectedInstitucion = computed(() => {
+    const id = this.tenant.activeInstitutionId();
+    if (id == null) return null;
+    return this.instituciones().find((item) => item.id === id) ?? null;
+  });
+
+  private readonly ieSearchInput = viewChild<ElementRef<HTMLInputElement>>('ieSearchInput');
+
+  readonly institucionesFiltradas = computed(() => {
+    const q = this.ieSearch().trim().toLowerCase();
+    const list = this.instituciones();
+    if (!q) return list;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return list.filter((ie) => {
+      const haystack = [
+        ie.nombre,
+        ie.siglas,
+        ie.codigoModular,
+        ie.ugel,
+        ie.dre,
+        ie.distrito,
+      ]
+        .join(' ')
+        .toLowerCase();
+      return tokens.every((t) => haystack.includes(t));
+    });
+  });
+
+  readonly ieListadoResumen = computed(() => {
+    const total = this.instituciones().length;
+    const visibles = this.institucionesFiltradas().length;
+    const q = this.ieSearch().trim();
+    if (!total) return 'Sin IE';
+    if (!q) return `${total} IE`;
+    return `${visibles} de ${total}`;
+  });
   notifications = [
     { id: 1, title: 'Nuevo pago registrado', time: 'Hace 5 min', icon: 'payments', iconBg: 'bg-green-500' },
     { id: 2, title: '3 solicitudes de matricula pendientes', time: 'Hace 1 hora', icon: 'assignment', iconBg: 'bg-blue-500' },
@@ -148,13 +281,36 @@ export class HeaderComponent implements OnInit {
     }
   }
 
-  onInstitucionChange(raw: string | number | null): void {
-    const value = raw === '' || raw == null ? null : Number(raw);
-    const id = value != null && Number.isInteger(value) && value > 0 ? value : null;
-    const ie = id != null ? this.instituciones().find((item) => item.id === id) : undefined;
+  toggleIePanel(): void {
+    const next = !this.ieOpen();
+    this.ieOpen.set(next);
+    if (next) {
+      this.notifOpen.set(false);
+      this.userOpen.set(false);
+      queueMicrotask(() => this.ieSearchInput()?.nativeElement.focus());
+    } else {
+      this.ieSearch.set('');
+    }
+  }
+
+  onIeSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeIePanel();
+    }
+  }
+
+  closeIePanel(): void {
+    this.ieOpen.set(false);
+    this.ieSearch.set('');
+  }
+
+  selectInstitucion(id: number): void {
+    const ie = this.instituciones().find((item) => item.id === id);
     this.tenant.setActiveInstitutionId(id, {
       label: ie ? this.institutionLabel(ie) : undefined,
     });
+    this.closeIePanel();
   }
 
   initiales(): string {

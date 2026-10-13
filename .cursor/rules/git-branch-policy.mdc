@@ -1,0 +1,13 @@
+---
+description: Política de ramas SIAGIE — solo main y siagie
+alwaysApply: true
+---
+
+# Política de ramas (escolar frontend)
+
+- Solo existen dos ramas de trabajo: **`siagie`** (desarrollo) y **`main`** (producción).
+- Todo el trabajo diario va en **`siagie`**. No crear ramas `feat/`, `fix/` ni similares salvo indicación explícita del usuario.
+- Antes de commitear o pushear, verificar `git branch --show-current` → debe ser **`siagie`**.
+- Push por defecto: `git push origin siagie` (o `git push -u origin siagie` la primera vez).
+- Push a **`main`** solo cuando el usuario lo indique explícitamente (p. ej. "sube a main/producción").
+- Remoto principal: **`origin`**. No pushear a `royal` salvo petición explícita.

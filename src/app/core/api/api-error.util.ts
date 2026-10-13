@@ -3,6 +3,11 @@ export function mensajeErrorHttp(err: unknown, fallback: string): string {
   const http = err as { status?: number; message?: string; error?: { message?: string | string[] } };
   const raw = http.error?.message ?? http.message;
   const msg = Array.isArray(raw) ? raw.join(', ') : raw;
+  if (http.status === 503) {
+    return typeof msg === 'string' && msg.trim()
+      ? msg
+      : 'API no disponible. Inicie escolar-backend en el puerto 3000.';
+  }
   if (
     http.status === 0 ||
     (http.status === 500 && (!msg || String(msg).startsWith('Http failure response')))

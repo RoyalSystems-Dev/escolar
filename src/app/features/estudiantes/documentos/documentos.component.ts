@@ -410,7 +410,7 @@ export class DocumentosComponent implements OnInit {
       next: (ctx) => this.context.set(ctx),
       error: () => this.context.set(null),
     });
-    this.expedientesSvc.load({ immediate: true });
+    this.expedientesSvc.load({ page: 1, pageSize: 500, immediate: true });
   }
 
   puedeCargar(): boolean {

@@ -5,8 +5,7 @@ import { gotoAppRoute } from './routing.helper';
 export async function loginAsAdmin(page: Page): Promise<void> {
   await gotoAppRoute(page, '/dashboard');
   if (page.url().includes('/auth/login')) {
-    await page.getByRole('button', { name: 'Administrador' }).click();
-    await page.waitForURL('**/#/dashboard**', { timeout: 60_000 });
+    await loginAsUser(page, 'admin');
   } else {
     await page.locator('app-main-layout, .min-h-screen').first().waitFor({ state: 'visible' });
   }
@@ -17,6 +16,22 @@ export async function waitForAppShell(page: Page): Promise<void> {
 }
 
 /** Login manual (sin botón demo). Útil para SIAGIE o usuarios multi-IE. */
+/** Portal estudiante (usuario demo `estudiante`). */
+export async function loginAsEstudiante(page: Page, password = 'admin123'): Promise<void> {
+  await gotoAppRoute(page, '/auth/login');
+  await page.locator('#username').fill('estudiante');
+  await page.locator('#password').fill(password);
+  await page.getByRole('button', { name: 'Ingresar al Sistema' }).click();
+  try {
+    await page.waitForURL('**/#/portal-estudiante/**', { timeout: 60_000 });
+  } catch {
+    await page.locator('app-student-app-nav, nav[aria-label="Navegación principal del portal estudiante"]').first().waitFor({
+      state: 'visible',
+      timeout: 60_000,
+    });
+  }
+}
+
 export async function loginAsUser(
   page: Page,
   username: string,

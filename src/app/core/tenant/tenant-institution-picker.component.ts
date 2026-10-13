@@ -44,7 +44,7 @@ export type TenantInstitutionConsultaModo = 'pending' | 'global' | 'institution'
             <option value="all">Todas las instituciones (vista SIAGIE)</option>
           }
           @for (ie of instituciones(); track ie.id) {
-            <option [value]="ie.id">{{ formatLabel(ie) }}</option>
+            <option [value]="ie.id">{{ ie.siglas }} — {{ ie.nombre }} ({{ ie.alumnos }} al.)</option>
           }
         </select>
         @if (hint) {

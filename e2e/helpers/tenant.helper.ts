@@ -10,6 +10,7 @@ export const API_V1 = `${QA_BASE}/api/v1`;
 /** Códigos modulares del seed multi-IE (multi-institution-migration). */
 export const IE_CODIGO_SAN_JUAN = '1111111';
 export const IE_CODIGO_SANTA_ROSA = '2222222';
+export const IE_CODIGO_BOLOGNESI = '7654321';
 
 export interface ApiAuthSession {
   accessToken: string;

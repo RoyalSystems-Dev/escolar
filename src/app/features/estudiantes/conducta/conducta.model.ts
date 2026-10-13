@@ -223,6 +223,37 @@ export const MEDIDAS: Record<string, string[]> = {
   ],
 };
 
+/** Totales reales del alumno a partir de sus incidentes (p. ej. historial completo desde API). */
+export function resumenAlumnoFromIncidentes(
+  incidentes: Incidente[],
+  fallback?: Pick<ResumenAlumno, 'alumnoId' | 'alumno' | 'grado' | 'seccion'>,
+): ResumenAlumno | null {
+  if (!incidentes.length) {
+    return fallback
+      ? {
+          ...fallback,
+          leves: 0,
+          graves: 0,
+          muyGraves: 0,
+          reconocimientos: 0,
+          nivel: 'bueno',
+        }
+      : null;
+  }
+  const first = incidentes[0];
+  return {
+    alumnoId: fallback?.alumnoId ?? first.alumnoId,
+    alumno: fallback?.alumno ?? first.alumno,
+    grado: fallback?.grado ?? first.grado,
+    seccion: fallback?.seccion ?? first.seccion,
+    leves: incidentes.filter((i) => i.tipo === 'falta_leve').length,
+    graves: incidentes.filter((i) => i.tipo === 'falta_grave').length,
+    muyGraves: incidentes.filter((i) => i.tipo === 'falta_muy_grave').length,
+    reconocimientos: incidentes.filter((i) => i.tipo === 'reconocimiento').length,
+    nivel: calcNivel(incidentes),
+  };
+}
+
 export function calcNivel(inc: Incidente[]): NivelConducta {
   const mg = inc.filter((i) => i.tipo === 'falta_muy_grave').length;
   const g = inc.filter((i) => i.tipo === 'falta_grave').length;

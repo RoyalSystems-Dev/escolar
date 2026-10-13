@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LayoutService } from '../../../core/layout/services/layout.service';
+import { TenantContextService } from '../../../core/tenant/tenant-context.service';
+import { markTenantReloadReady, setupTenantReload } from '../../../core/tenant/tenant-reload.util';
 import { HistorialAcademicoService } from './historial-academico.service';
 import {
   HistorialAcademicoDetalle,
@@ -36,7 +38,7 @@ import {
           <span class="icon icon-sm">upload_file</span> Carga masiva
         </a>
         <span class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-semibold border border-indigo-100">
-          {{ alumnosFiltrados().length }} alumno(s)
+          {{ total() }} alumno(s)
         </span>
       </div>
     </div>
@@ -115,6 +117,20 @@ import {
                 </tbody>
               </table>
             </div>
+            @if (total() > pageSize) {
+              <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-500">{{ inicio() }}–{{ fin() }} de {{ total() }}</span>
+                <div class="flex items-center gap-1">
+                  <button class="btn-icon" type="button" [disabled]="pagina() === 1 || svc.loading()" (click)="irPagina(pagina() - 1)">
+                    <span class="icon icon-sm">chevron_left</span>
+                  </button>
+                  <span class="text-xs text-gray-500 px-1">{{ pagina() }}/{{ totalPaginas() }}</span>
+                  <button class="btn-icon" type="button" [disabled]="pagina() >= totalPaginas() || svc.loading()" (click)="irPagina(pagina() + 1)">
+                    <span class="icon icon-sm">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+            }
           }
         </div>
       </div>
@@ -418,6 +434,11 @@ import {
 export class HistorialAcademicoComponent implements OnInit {
   readonly svc = inject(HistorialAcademicoService);
   private readonly layout = inject(LayoutService);
+  private readonly tenant = inject(TenantContextService);
+  private readonly _tenantReloadReady = setupTenantReload(
+    () => this.cargarLista(),
+    { onBeforeReload: () => this.limpiarVistaInstitucion() },
+  );
 
   readonly anioEscolar = new Date().getFullYear();
   readonly TABS = [
@@ -437,10 +458,30 @@ export class HistorialAcademicoComponent implements OnInit {
   readonly detalle = signal<HistorialAcademicoDetalle | null>(null);
 
   readonly alumnosFiltrados = computed(() => this._alumnos());
+  readonly total = signal(0);
+  readonly pagina = signal(1);
+  readonly pageSize = 50;
+  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
+  readonly inicio = computed(() => (this.total() === 0 ? 0 : (this.pagina() - 1) * this.pageSize + 1));
+  readonly fin = computed(() => (this.pagina() - 1) * this.pageSize + this._alumnos().length);
 
   ngOnInit(): void {
     this.layout.setTitle('Historial Académico');
-    this.cargarLista();
+    if (!this.tenant.requiresSelection()) {
+      this.cargarLista();
+    }
+    markTenantReloadReady(this._tenantReloadReady);
+  }
+
+  private limpiarVistaInstitucion(): void {
+    this.selId.set(null);
+    this.detalle.set(null);
+    this._alumnos.set([]);
+    this.aniosExpandidos.set(new Set());
+    this.errorMsg.set('');
+    this.tab.set('trayectoria');
+    this.total.set(0);
+    this.pagina.set(1);
   }
 
   notaColor = notaColorClass;
@@ -449,17 +490,25 @@ export class HistorialAcademicoComponent implements OnInit {
 
   onBusquedaChange(): void {
     clearTimeout(this.busquedaTimer);
-    this.busquedaTimer = setTimeout(() => this.cargarLista(), 300);
+    this.busquedaTimer = setTimeout(() => this.cargarLista(1), 300);
   }
 
-  cargarLista(): void {
+  irPagina(page: number): void {
+    if (page < 1 || page > this.totalPaginas() || page === this.pagina()) return;
+    this.cargarLista(page);
+  }
+
+  cargarLista(page = this.pagina()): void {
     this.errorMsg.set('');
-    this.svc.loadList(this.busqueda, 1, 50).subscribe({
+    this.pagina.set(page);
+    this.svc.loadList(this.busqueda, page, this.pageSize).subscribe({
       next: (res) => {
         this._alumnos.set(res.items);
+        this.total.set(res.total);
         const id = this.selId();
-        if (id && !res.items.some((r) => r.id === id)) {
-          this.seleccionar(id);
+        if (id != null && !res.items.some((r) => r.id === id)) {
+          this.selId.set(null);
+          this.detalle.set(null);
         }
       },
       error: (err: Error) => this.errorMsg.set(err.message),

@@ -20,6 +20,8 @@ export async function fillEstudianteMinimo(page: Page, data: EstudianteFormData)
   await page.getByPlaceholder('12345678').fill(data.dni);
   await page.locator('input[type="date"]').first().fill(fechaNac);
   await page.locator('label:has-text("Grado")').locator('..').locator('select').selectOption(grado);
+  await page.getByPlaceholder('Nombres completos').blur();
+  await page.getByPlaceholder('Apellidos').blur();
   await page.getByPlaceholder('12345678').blur();
 }
 
