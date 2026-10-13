@@ -1,9 +1,10 @@
-﻿import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { LayoutService } from '../../core/layout/services/layout.service';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { DashboardService } from './dashboard.service';
+import { markTenantReloadReady, setupTenantReload } from '../../core/tenant/tenant-reload.util';
 
 interface StatCard {
   label: string;
@@ -32,9 +33,6 @@ interface RecentActivity {
         <div class="flex gap-2">
           <button type="button" class="btn btn-secondary btn-sm" (click)="cargar()" [disabled]="svc.loading()">
             <span class="icon icon-sm">refresh</span> Actualizar
-          </button>
-          <button class="btn btn-secondary" routerLink="/reportes" class="text-sm">
-            <span class="icon mr-1 text-base">bar_chart</span> Reportes
           </button>
           <button class="btn btn-primary" color="primary" routerLink="/matricula/nueva" class="text-sm">
             <span class="icon mr-1 text-base">person_add</span> Nueva Matrícula
@@ -115,7 +113,7 @@ interface RecentActivity {
         <div class="card p-6">
           <div class="flex items-center justify-between mb-5">
             <h3 class="font-semibold text-gray-800">Asistencia Hoy</h3>
-            <a routerLink="/asistencia/reportes" class="text-xs text-indigo-600 hover:underline">Ver reporte</a>
+            <a routerLink="/reportes/asistencia" class="text-xs text-indigo-600 hover:underline">Ver reporte</a>
           </div>
 
           <!-- Donut visual simple -->
@@ -161,7 +159,7 @@ interface RecentActivity {
         <div class="card p-6">
           <div class="flex items-center justify-between mb-5">
             <h3 class="font-semibold text-gray-800">Estado Financiero</h3>
-            <a routerLink="/tesoreria/reportes" class="text-xs text-indigo-600 hover:underline">Detalle</a>
+            <a routerLink="/reportes/tesoreria" class="text-xs text-indigo-600 hover:underline">Detalle</a>
           </div>
           <div class="space-y-4">
             @for (item of finanzas; track item.label) {
@@ -251,6 +249,7 @@ export class DashboardComponent implements OnInit {
   private readonly layout = inject(LayoutService);
   readonly auth = inject(AuthService);
   readonly svc = inject(DashboardService);
+  private readonly _tenantReloadReady = setupTenantReload(() => this.cargar());
 
   readonly error = signal('');
 
@@ -298,6 +297,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.layout.setTitle('Dashboard');
     this.cargar();
+    markTenantReloadReady(this._tenantReloadReady);
   }
 
   cargar(): void {

@@ -92,33 +92,89 @@ export interface ConductIncidentsPage {
 
 export const TIPO_CFG: Record<
   TipoIncidente,
-  { badge: string; label: string; icon: string; color: string }
+  {
+    badge: string;
+    label: string;
+    icon: string;
+    color: string;
+    card: string;
+    iconBg: string;
+    medidaText: string;
+    rowBorder: string;
+  }
 > = {
   falta_leve: {
     badge: 'badge-yellow',
     label: 'Falta Leve',
     icon: 'warning',
-    color: 'text-yellow-500',
+    color: 'text-yellow-600',
+    card: 'border-yellow-200 bg-yellow-50/50 hover:bg-yellow-50/70',
+    iconBg: 'bg-yellow-100 text-yellow-800',
+    medidaText: 'text-yellow-900',
+    rowBorder: 'border-l-yellow-400',
   },
   falta_grave: {
     badge: 'badge-orange',
     label: 'Falta Grave',
     icon: 'report',
-    color: 'text-orange-500',
+    color: 'text-orange-600',
+    card: 'border-orange-300 bg-orange-50/60 hover:bg-orange-50/80',
+    iconBg: 'bg-orange-100 text-orange-800',
+    medidaText: 'text-orange-900',
+    rowBorder: 'border-l-orange-500',
   },
   falta_muy_grave: {
     badge: 'badge-red',
     label: 'Falta Muy Grave',
     icon: 'gpp_bad',
-    color: 'text-red-500',
+    color: 'text-red-800',
+    card: 'border-red-400 bg-red-100/50 hover:bg-red-100/70 ring-1 ring-red-200/80',
+    iconBg: 'bg-red-200 text-red-900',
+    medidaText: 'text-red-950',
+    rowBorder: 'border-l-red-700',
   },
   reconocimiento: {
     badge: 'badge-green',
     label: 'Reconocimiento',
     icon: 'emoji_events',
-    color: 'text-emerald-500',
+    color: 'text-emerald-600',
+    card: 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/60',
+    iconBg: 'bg-emerald-100 text-emerald-800',
+    medidaText: 'text-emerald-900',
+    rowBorder: 'border-l-emerald-500',
   },
 };
+
+const DEFAULT_TIPO_STYLE = {
+  badge: 'badge-gray',
+  label: '',
+  icon: 'help',
+  color: 'text-gray-500',
+  card: 'border-gray-200 bg-gray-50/40',
+  iconBg: 'bg-gray-100 text-gray-600',
+  medidaText: 'text-gray-800',
+  rowBorder: 'border-l-gray-300',
+};
+
+export function tipoConductaStyle(tipo: string) {
+  return TIPO_CFG[tipo] ?? { ...DEFAULT_TIPO_STYLE, label: tipo };
+}
+
+export function tipoCardClasses(tipo: string): string {
+  return tipoConductaStyle(tipo).card;
+}
+
+export function tipoIconBgClasses(tipo: string): string {
+  return tipoConductaStyle(tipo).iconBg;
+}
+
+export function tipoMedidaTextClass(tipo: string): string {
+  return tipoConductaStyle(tipo).medidaText;
+}
+
+export function tipoRowBorderClass(tipo: string): string {
+  return tipoConductaStyle(tipo).rowBorder;
+}
 
 export const ESTADO_CFG: Record<EstadoIncidente, { badge: string; label: string }> = {
   pendiente: { badge: 'badge-yellow', label: 'Pendiente' },
@@ -166,6 +222,37 @@ export const MEDIDAS: Record<string, string[]> = {
     'Carta de felicitación',
   ],
 };
+
+/** Totales reales del alumno a partir de sus incidentes (p. ej. historial completo desde API). */
+export function resumenAlumnoFromIncidentes(
+  incidentes: Incidente[],
+  fallback?: Pick<ResumenAlumno, 'alumnoId' | 'alumno' | 'grado' | 'seccion'>,
+): ResumenAlumno | null {
+  if (!incidentes.length) {
+    return fallback
+      ? {
+          ...fallback,
+          leves: 0,
+          graves: 0,
+          muyGraves: 0,
+          reconocimientos: 0,
+          nivel: 'bueno',
+        }
+      : null;
+  }
+  const first = incidentes[0];
+  return {
+    alumnoId: fallback?.alumnoId ?? first.alumnoId,
+    alumno: fallback?.alumno ?? first.alumno,
+    grado: fallback?.grado ?? first.grado,
+    seccion: fallback?.seccion ?? first.seccion,
+    leves: incidentes.filter((i) => i.tipo === 'falta_leve').length,
+    graves: incidentes.filter((i) => i.tipo === 'falta_grave').length,
+    muyGraves: incidentes.filter((i) => i.tipo === 'falta_muy_grave').length,
+    reconocimientos: incidentes.filter((i) => i.tipo === 'reconocimiento').length,
+    nivel: calcNivel(incidentes),
+  };
+}
 
 export function calcNivel(inc: Incidente[]): NivelConducta {
   const mg = inc.filter((i) => i.tipo === 'falta_muy_grave').length;

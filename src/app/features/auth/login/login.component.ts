@@ -2,6 +2,8 @@
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/auth/services/auth.service';
+import { environment } from '@environments/environment';
+import { TENANT_INSTITUTION_STORAGE_KEY } from '../../../core/tenant/tenant.constants';
 
 @Component({
   selector: 'app-login',
@@ -26,26 +28,28 @@ import { AuthService } from '../../../core/auth/services/auth.service';
         <div class="bg-white rounded-2xl shadow-2xl p-8">
           <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">Iniciar Sesion</h2>
 
-          <!-- Acceso alumno destacado -->
-          <button type="button"
-            class="w-full flex items-center gap-4 p-4 mb-6 rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 hover:border-emerald-400 hover:from-emerald-100 hover:to-teal-100 transition-all group"
-            (click)="ingresarComoAlumno()"
-            [disabled]="auth.isLoading()">
-            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500 text-white shadow-md group-hover:scale-105 transition-transform">
-              <span class="icon icon-lg">backpack</span>
-            </div>
-            <div class="text-left flex-1">
-              <div class="font-semibold text-emerald-900">Soy alumno / estudiante</div>
-              <div class="text-sm text-emerald-700">Ingresa a tu portal escolar</div>
-            </div>
-            <span class="icon text-emerald-500 group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
-          </button>
+          @if (enableDemoLogin) {
+            <!-- Acceso alumno destacado (solo desarrollo) -->
+            <button type="button"
+              class="w-full flex items-center gap-4 p-4 mb-6 rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 hover:border-emerald-400 hover:from-emerald-100 hover:to-teal-100 transition-all group"
+              (click)="ingresarComoAlumno()"
+              [disabled]="auth.isLoading()">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500 text-white shadow-md group-hover:scale-105 transition-transform">
+                <span class="icon icon-lg">backpack</span>
+              </div>
+              <div class="text-left flex-1">
+                <div class="font-semibold text-emerald-900">Soy alumno / estudiante</div>
+                <div class="text-sm text-emerald-700">Ingresa a tu portal escolar</div>
+              </div>
+              <span class="icon text-emerald-500 group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+            </button>
 
-          <div class="flex items-center gap-3 mb-6">
-            <div class="flex-1 h-px bg-gray-200"></div>
-            <span class="text-xs text-gray-400 uppercase tracking-wide">Personal y familias</span>
-            <div class="flex-1 h-px bg-gray-200"></div>
-          </div>
+            <div class="flex items-center gap-3 mb-6">
+              <div class="flex-1 h-px bg-gray-200"></div>
+              <span class="text-xs text-gray-400 uppercase tracking-wide">Personal y familias</span>
+              <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+          }
 
           @if (auth.error()) {
             <div class="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4 text-sm text-red-700">
@@ -96,20 +100,21 @@ import { AuthService } from '../../../core/auth/services/auth.service';
               }
             </button>
           </form>
-          <!-- Usuarios demo -->
-          <div class="mt-6 pt-6 border-t border-gray-100">
-            <p class="text-xs text-gray-500 text-center mb-3">Acceso rapido personal (demo)</p>
-            <div class="grid grid-cols-2 gap-2">
-              @for (demo of demoUsers; track demo.user) {
-                <button type="button"
-                  class="p-2 text-left rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                  (click)="loginDemo(demo.user, demo.pass)">
-                  <div class="text-xs font-medium text-gray-700">{{ demo.label }}</div>
-                  <div class="text-xs text-gray-400">{{ demo.user }}</div>
-                </button>
-              }
+          @if (enableDemoLogin) {
+            <div class="mt-6 pt-6 border-t border-gray-100">
+              <p class="text-xs text-gray-500 text-center mb-3">Acceso rapido personal (demo)</p>
+              <div class="grid grid-cols-2 gap-2">
+                @for (demo of demoUsers; track demo.user) {
+                  <button type="button"
+                    class="p-2 text-left rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                    (click)="loginDemo(demo.user, demo.pass)">
+                    <div class="text-xs font-medium text-gray-700">{{ demo.label }}</div>
+                    <div class="text-xs text-gray-400">{{ demo.user }}</div>
+                  </button>
+                }
+              </div>
             </div>
-          </div>
+          }
         </div>
         <p class="text-center text-indigo-200 text-xs mt-6">
           &copy; 2025 EscolarERP - Todos los derechos reservados
@@ -119,6 +124,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
   `
 })
 export class LoginComponent {
+  readonly enableDemoLogin = environment.enableDemoLogin;
   readonly auth  = inject(AuthService);
   private readonly fb     = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -134,9 +140,10 @@ export class LoginComponent {
 
   demoUsers = [
     { label: 'Administrador', user: 'admin',    pass: 'admin123' },
+    { label: 'SIAGIE',        user: 'siagie',   pass: 'admin123' },
     { label: 'Docente',       user: 'docente',  pass: 'admin123' },
-    { label: 'Padre/Madre',   user: 'padre',    pass: 'admin123' },
     { label: 'Director',      user: 'director', pass: 'admin123' },
+    { label: 'Padre/Madre',   user: 'padre',    pass: 'admin123' },
   ];
 
   private readonly alumnoDemo = { user: 'estudiante', pass: 'admin123' };
@@ -146,6 +153,9 @@ export class LoginComponent {
   }
 
   loginDemo(user: string, pass: string, returnUrl?: string): void {
+    if (user === 'siagie') {
+      localStorage.removeItem(TENANT_INSTITUTION_STORAGE_KEY);
+    }
     this.form.patchValue({ username: user, password: pass });
     this.login(returnUrl);
   }

@@ -16,6 +16,7 @@ import {
   PromediosResumen,
 } from './promedios.model';
 import type { GradingConfig } from '../../../core/grading/grading-config.model';
+import { mensajeErrorHttp } from '../../../core/api/api-error.util';
 
 @Component({
   selector: 'app-promedios',
@@ -518,7 +519,7 @@ export class PromediosComponent implements OnInit {
         this.cargar();
       },
       error: err =>
-        this.error.set(err?.error?.message ?? err?.message ?? 'No se pudieron cargar las aulas'),
+        this.error.set(mensajeErrorHttp(err, 'No se pudieron cargar las aulas')),
     });
   }
 
@@ -543,7 +544,7 @@ export class PromediosComponent implements OnInit {
         this.actualizarColumnasResumen(res);
       },
       error: err => {
-        this.error.set(err?.error?.message ?? err?.message ?? 'No se pudieron calcular promedios');
+        this.error.set(mensajeErrorHttp(err, 'No se pudieron calcular promedios'));
         this._alumnos.set([]);
         this._resumen.set(null);
       },

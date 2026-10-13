@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api/v1',
+  enableDemoLogin: true,
+  apiUrl: '/api/v1',
   appName: 'EscolarERP',
   version: '1.0.0',
   tokenExpirationWarning: 300,
